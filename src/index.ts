@@ -18,6 +18,23 @@ app.use('/static/*', async (c, next) => {
 	}
 	return response;
 })
+app.get('/js', async (c) =>{
+	let {host, pathname} = new URL(c.req.url);
+	const cachedRequest = new Request(`https://${host}${pathname}`);
+	const cachedResponse = await caches.default.match(cachedRequest);
+	if (cachedResponse) {
+		return cachedResponse;
+	}
+	const blurhash = await fetch('https://js.cdyn.dev/blurhash.min.js');
+	const youtube = await fetch('https://js.cdyn.dev/youtube.min.js');
+	const response = new Response(`${await blurhash.text()}\n${await youtube.text()}`, {
+		headers: new Headers([
+			['cache-control', 'max-age=3600']
+		])
+	});
+	c.executionCtx.waitUntil(caches.default.put(cachedRequest, response.clone()));
+	return response;
+});
 
 interface NewBody {
 	time: string

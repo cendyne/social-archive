@@ -15,7 +15,7 @@ export function Layout(props: {title: string, children?: any}) {
       {props.children}
     </article>
     </div>
-    <script src="/static/blurhash.js" type="application/javascript" defer></script>
+    <script src="/js" type="application/javascript" defer></script>
   </body>
   </html>;
 }
