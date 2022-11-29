@@ -4,6 +4,7 @@ import { bearerCheck } from './bearerCheck'
 import { Env, HonoEnv } from './environment'
 import { ListPage } from './ListPage'
 import { getKey } from './signature'
+import { SinglePage } from './SinglePage'
 import { TweetKind } from './TweetKind'
 import { UnknownKind } from './UnknownKind'
 import { decodeBase64Url, encodeBase64Url } from './utils'
@@ -202,6 +203,14 @@ app.get('/json/get/:kind/:id', async (c) => {
 	}
 })
 
+function mapKindToHtml(kind: string, result: {id: string, content: any}): any {
+	if (kind == 'tweet') {
+		return TweetKind({data: result})
+	} else {
+		return UnknownKind({data: result});
+	}
+}
+
 app.get('/list/:kind', async (c) => {
 	const kind = c.req.param('kind');
 	if (!kind || kind.length <= 0) {
@@ -213,13 +222,23 @@ app.get('/list/:kind', async (c) => {
 	if (result.error) {
 		return c.text(result.message, 400);
 	} else {
-		return c.html(ListPage(kind, result.results.map(result => {
-			if (kind == 'tweet') {
-				return TweetKind({data: result})
-			} else {
-				return UnknownKind({data: result});
-			}
-		}), result.next, result.prev, result.last));
+		return c.html(ListPage(kind, result.results.map(result => mapKindToHtml(kind, result)), result.next, result.prev, result.last));
+	}
+})
+
+app.get('/get/:kind/:id', async (c) => {
+	const kind = c.req.param('kind');
+	const id = c.req.param('id');
+	if (!kind || kind.length <= 0 || !id || id.length <= 0) {
+		return c.text('Kind or ID missing', 400);
+	}
+	const stmt = await c.env.DB.prepare('select kind_id, content from archive where kind = ? and kind_id = ?');
+	const result = await stmt.bind(kind, `${id}`).first<{content: any, kind_id: string}>();
+	if (result) {
+		const json = JSON.parse(result.content);
+		return c.html(SinglePage(kind, [mapKindToHtml(kind, {id: result.kind_id, content: json})]));
+	} else {
+		return c.text('Not found', 404);
 	}
 })
 
