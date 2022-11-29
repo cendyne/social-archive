@@ -1,0 +1,13 @@
+name = "social-archive"
+main = "src/index.ts"
+compatibility_date = "2022-11-28"
+route = "social-archive.cendyne.app/*"
+
+[site]
+bucket = "./assets"
+
+[[ d1_databases ]]
+binding = "DB"
+database_name = "social_archive"
+database_id = "f4a7564d-cc96-4a22-b90a-5e72b6fa8964"
+preview_database_id = "f4a7564d-cc96-4a22-b90a-5e72b6fa8964"
