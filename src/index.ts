@@ -193,11 +193,16 @@ app.get('/json/get/:kind/:id', async (c) => {
 	if (!kind || kind.length <= 0 || !id || id.length <= 0) {
 		return c.text('Kind or ID missing', 400);
 	}
-	const stmt = await c.env.DB.prepare('select content from archive where kind = ? and kind_id = ?');
-	const result = await stmt.bind(kind, `${id}`).first<{content: any}>();
+	const stmt = await c.env.DB.prepare('select kind, kind_id, content, archive_url from archive where kind = ? and kind_id = ?');
+	const result = await stmt.bind(kind, `${id}`).first<{content: any, kind: string, kind_id: string, archive_url: string }>();
 	if (result) {
 		const json = JSON.parse(result.content);
-		return c.json(json);
+		return c.json({
+			id: result.kind_id,
+			kind: result.kind,
+			content: json,
+			archive: result.archive_url
+		});
 	} else {
 		return c.text('Not found', 404);
 	}
