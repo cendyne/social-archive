@@ -436,13 +436,16 @@ p:first-child, .mendoza-codeblock:first-child, iframe:first-child, ul:first-chil
 }
 .youtube-embed {
   background-size: cover;
+  background-position: center;
 }
 .youtube-embed-notice {
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.5);
-  text-align: center;
+  background-color: rgba(0,0,0,0.7);
   font-size: larger;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sticker-left, .sticker-right {

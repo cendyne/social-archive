@@ -26,7 +26,7 @@ export function TweetKind(props: {data: {id: string, content: {name: string, use
               <source src={video.url} type="video/mp4" />
             </video>)}
           <p>
-            <a href={`https://twitter.com/${content.username}/status/${props.data.id}`} rel="noopener noreferrer nofollow">{date.toISOString()}</a> - <a href={`/json/get/tweet/${props.data.id}`} rel="noopener noreferrer nofollow">as json</a> - <a href={`/get/tweet/${props.data.id}`} rel="noopener noreferrer nofollow">as html</a>
+            <a href={`https://twitter.com/${content.username}/status/${props.data.id}`} rel="noopener noreferrer nofollow">{date.toISOString()}</a> - <a href={`/json/get/tweet/${props.data.id}`}>as json</a> - <a href={`/get/tweet/${props.data.id}`}>as html</a>
           </p>
         </div>
       </div>

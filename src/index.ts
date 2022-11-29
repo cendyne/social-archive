@@ -8,6 +8,7 @@ import { SinglePage } from './SinglePage'
 import { TweetKind } from './TweetKind'
 import { UnknownKind } from './UnknownKind'
 import { decodeBase64Url, encodeBase64Url } from './utils'
+import { YoutubeKind } from './YoutubeKind'
 const app = new Hono<HonoEnv>()
 app.get('/', (c) => c.text('TODO'))
 const staticMiddleware = serveStatic({root: './'});
@@ -227,7 +228,9 @@ app.get('/json/get/:kind/:id', async (c) => {
 
 function mapKindToHtml(kind: string, result: {id: string, content: any}): any {
 	if (kind == 'tweet') {
-		return TweetKind({data: result})
+		return TweetKind({data: result});
+	} else if (kind == 'youtube') {
+		return YoutubeKind({data: result});
 	} else {
 		return UnknownKind({data: result});
 	}
