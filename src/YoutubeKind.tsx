@@ -20,7 +20,7 @@ export function YoutubeKind(props: {data: {id: string, content: {
   let date = new Date(content.iso8601);
   const id = props.data.id;
   let header = <div class="card-header-bg" data-background={content.banner}>
-    <a href={content.channel_url} class="inline-flex card-header-link flex-grow">
+    <a href={content.channel_url} class="inline-flex card-header-link flex-no-shrink">
       <div class="card-header">
         <div class="card-icon">
           <img loading="lazy" class="card-icon-image" src={content.icon + '?height=64'} />

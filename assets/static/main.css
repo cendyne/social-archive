@@ -564,3 +564,6 @@ a.fediverse-link, a.card-header-link {
 .all-rounded {
   border-radius: 0.375rem;
 }
+.flex-no-shrink {
+  flex-shrink: 0;
+}
