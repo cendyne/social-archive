@@ -126,10 +126,10 @@ function parseEmojis(emojis: EmojiMap, text: string) : Child[] {
         // console.log(`Emoji ${top}`)
         top = '';
         continue;
-      } else if (char == ' ') {
+      } else if (!char.match(/^[a-zA-Z0-9_\-]$/)) {
         // Not a valid short code
         mode = 'text';
-        top += ' ';
+        top += char;
         continue;
       }
       top += char;
@@ -490,6 +490,10 @@ function sanitizeAndAddEmojis(emojis: EmojiMap, node: Child, depth: number) : Ch
       if (SAFE_ATTRIBUTES[k]) {
         props[k] = v;
       }
+    }
+
+    if (tag == 'a') {
+      props['rel'] = 'ugc noreferer nofollow noopener'
     }
 
     if (tag == 'span') {

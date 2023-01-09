@@ -5,6 +5,7 @@ import { jsx } from 'hono/jsx'
 export function YoutubeKind(props: {data: {id: string, content: {
   icon: string,
   poster: string,
+  banner: string | null,
   url?: string,
   width: number,
   height: number,
@@ -18,41 +19,48 @@ export function YoutubeKind(props: {data: {id: string, content: {
   let content = props.data.content;
   let date = new Date(content.iso8601);
   const id = props.data.id;
-  if (content.url) {
-    return <div class="float-pair im-message">
-      <div class="flex gap1">
-        <div class="flex-auto">
-          <div class="im-message-right">
-            <p class="free-quote-name">
-              <a href={content.channel_url}>{content.name}</a>
-            </p>
-            <p>
-              <video poster={content.poster} style={`aspect-ratio: ${content.width}/${content.height}`} controls="" preload="none">
-                <source src={content.url} type="video/mp4" />
-              </video>
-            </p>
-            <p>
-              <a href={content.source_url}>{content.title}</a> {date.toLocaleDateString("en-US",{weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'})} - <a href={`/json/get/youtube/${props.data.id}`}>as json</a> - <a href={`/get/youtube/${props.data.id}`}>as html</a>
-            </p>
-          </div>
-        </div>
-        <div class="flex-none">
-          <div class="free-quote-icon">
-            <img width="64" alt={content.name} src={`${content.icon}?width=64`} />
-          </div>
+  let header = <div class="card-header-bg" data-background={content.banner}>
+    <a href={content.channel_url} class="inline-flex card-header-link flex-grow">
+      <div class="card-header">
+        <div class="card-icon">
+          <img loading="lazy" class="card-icon-image" src={content.icon + '?height=64'} />
         </div>
       </div>
-    </div>
+      <div class="card-header-content">
+        <div class="card-header-name">{content.name}</div>
+      </div>
+    </a>
+    <a href={content.source_url} class="inline-flex card-header-link flex-shrink">
+      <div class="card-header-content flex-shrink all-rounded">
+        <div class="card-header-name">{content.title}</div>
+      </div>
+    </a>
+  </div>;
+  let footer = <div class="card-footer">
+    <a href={content.source_url}>{date.toLocaleString()}</a> - <a href={`/json/get/youtube/${props.data.id}`}>as json</a> - <a href={`/get/youtube/${props.data.id}`}>as html</a>
+  </div>;
+  if (content.url) {
+      return <div class="card">
+      {header}
+      <video
+        poster={content.poster}
+        class="card-video"
+        style={`aspect-ratio: ${content.width}/${content.height}`}
+        controls=""
+        preload="none">
+        <source src={content.url} type="video/mp4" />
+      </video>
+      {footer}
+    </div>;
   } else {
-    return <div>
+    return <div class="card">
+      {header}
       <div data-youtube-poster={content.poster} data-width={content.width} data-height={content.height} data-youtube-id={id} style={`aspect-ratio: ${content.width}/${content.height}`} class="youtube-embed">
       <noscript>
         <iframe class="youtube-iframe" width="100%" height="363" src={`https://www.youtube-nocookie.com/embed/${id}`} title="Youtube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen=""></iframe>
       </noscript>
-    </div>
-    <p>
-      <a href={content.source_url} rel="noopener noreferrer nofollow">{content.title}</a> by <a href={content.channel_url} rel="noopener noreferrer nofollow">{content.name}</a> - <a href={`/json/get/youtube/${props.data.id}`}>as json</a> - <a href={`/get/youtube/${props.data.id}`}>as html</a>
-    </p>
+      </div>
+      {footer}
     </div>
   }
 }
