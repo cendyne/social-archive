@@ -5,6 +5,7 @@ import { Env, HonoEnv } from './environment'
 import { ListPage } from './ListPage'
 import { getKey } from './signature'
 import { SinglePage } from './SinglePage'
+import { TootKind } from './TootKind'
 import { TweetKind } from './TweetKind'
 import { UnknownKind } from './UnknownKind'
 import { decodeBase64Url, encodeBase64Url } from './utils'
@@ -28,7 +29,8 @@ app.get('/js', async (c) =>{
 	}
 	const blurhash = await fetch('https://js.cdyn.dev/blurhash.min.js');
 	const youtube = await fetch('https://js.cdyn.dev/youtube.min.js');
-	const response = new Response(`${await blurhash.text()}\n${await youtube.text()}`, {
+	const enhance = await fetch('https://js.cdyn.dev/enhance.min.js');
+	const response = new Response(`${await blurhash.text()}\n${await youtube.text()}\n${await enhance.text()}`, {
 		headers: new Headers([
 			['cache-control', 'max-age=3600']
 		])
@@ -231,6 +233,8 @@ function mapKindToHtml(kind: string, result: {id: string, content: any}): any {
 		return TweetKind({data: result});
 	} else if (kind == 'youtube') {
 		return YoutubeKind({data: result});
+	} else if (kind == 'toot') {
+		return TootKind({data: result});
 	} else {
 		return UnknownKind({data: result});
 	}
