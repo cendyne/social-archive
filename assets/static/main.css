@@ -496,6 +496,7 @@ p:first-child, .mendoza-codeblock:first-child, iframe:first-child, ul:first-chil
   margin-top: 0.5rem;
   padding-left: 1.25rem;
   padding-right: 1.25rem;
+  margin-bottom: 0.5rem;
 }
 .card-icon {
   flex-shrink: 0;
