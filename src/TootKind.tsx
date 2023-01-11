@@ -565,6 +565,17 @@ export function TootKind(props: {data: {id: string, content: Toot}}) {
     htmlContent = parsedHtml;
     console.error(e);
   }
+  if (htmlContent) {
+    if (typeof htmlContent == 'string') {
+      if (htmlContent == '') {
+        htmlContent = null;
+      }
+    } else if (Array.isArray(htmlContent)) {
+      if (htmlContent.length == 0) {
+        htmlContent = null;
+      }
+    }
+  }
 
   return <div class="card">
     <div class="card-header-bg" data-background={header}>
@@ -583,9 +594,9 @@ export function TootKind(props: {data: {id: string, content: Toot}}) {
         </div>
       </a>
     </div>
-    <div class="card-content">
+    {htmlContent && (<div class="card-content">
       {htmlContent}
-    </div>
+    </div>)}
     {media.length > 0 ? (<div class="card-media">
       {media.map((m) => {
         if (m.type == 'image') {
@@ -593,7 +604,14 @@ export function TootKind(props: {data: {id: string, content: Toot}}) {
             <img loading="lazy" width={m.meta.original.width} height={m.meta.original.height} src={m.url} alt={m.description} class="simple-image blurhash-actual-image" />
           </div>
         } else if (m.type == 'video') {
-          return <video poster={m.preview_url} style={`aspect-ratio: ${m.meta.original.width}/${m.meta.original.height}`} controls="" preload="none">
+          return <video
+            poster={m.preview_url}
+            class="card-video"
+            data-ratio
+            data-width={m.meta.original.width}
+            data-height={m.meta.original.height}
+            controls=""
+            preload="none">
             <source src={m.url} type="video/mp4"/>
           </video>
         } else {

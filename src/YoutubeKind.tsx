@@ -45,7 +45,9 @@ export function YoutubeKind(props: {data: {id: string, content: {
       <video
         poster={content.poster}
         class="card-video"
-        style={`aspect-ratio: ${content.width}/${content.height}`}
+        data-ratio
+        data-width={content.width}
+        data-height={content.height}
         controls=""
         preload="none">
         <source src={content.url} type="video/mp4" />

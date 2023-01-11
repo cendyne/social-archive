@@ -22,7 +22,14 @@ export function TweetKind(props: {data: {id: string, content: {name: string, use
               </a>
             </div>)}
           {content.videos && content.videos.map(video =>
-            <video controls preload="none" style={`aspect-ratio: ${video.width}/${video.height}`} poster={video.poster}>
+            <video
+              controls
+              preload="none"
+              class="card-video"
+              data-ratio
+              data-width={video.width}
+              data-height={video.height}
+              poster={video.poster}>
               <source src={video.url} type="video/mp4" />
             </video>)}
           <p>
