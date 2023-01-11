@@ -1,8 +1,32 @@
 /** @jsx jsx */
 /** @jsxFrag  Fragment */
-import { jsx } from 'hono/jsx'
+import { Fragment, jsx } from 'hono/jsx'
+import { RenderOptions } from './RenderOptions'
+interface TweetContent {
+  name: string,
+  username: string,
+  timestamp: number,
+  text: string,
+  photos: {
+    url: string,
+    width: number,
+    height: number,
+    blurhash: string
+  }[],
+  videos: {
+    poster: string,
+    url: string,
+    width: number,
+    height: number,
+    blurhash: string
+  }[], icon: string
+}
+interface TweetData {
+  id: string,
+  content: TweetContent
+}
 
-export function TweetKind(props: {data: {id: string, content: {name: string, username: string, timestamp: number, text: string, photos: {url: string, width: number, height: number, blurhash: string}[], videos: {poster: string, url: string, width: number, height: number, blurhash: string}[], icon: string}}}) {
+export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
   let content = props.data.content;
   let date = new Date(content.timestamp * 1000);
   return <div class="float-pair im-message">
@@ -10,7 +34,7 @@ export function TweetKind(props: {data: {id: string, content: {name: string, use
       <div class="flex-auto">
         <div class="im-message-right">
           <div class="free-quote-name">
-            <a href={`https://twitter.com/${content.username}`} rel="noopener noreferrer nofollow" >{content.name}</a>
+            <a href={`https://twitter.com/${content.username}`} rel="noopener noreferrer nofollow" target='_top'>{content.name}</a>
           </div>
           <p>
             {content.text}
@@ -33,7 +57,8 @@ export function TweetKind(props: {data: {id: string, content: {name: string, use
               <source src={video.url} type="video/mp4" />
             </video>)}
           <p>
-            <a href={`https://twitter.com/${content.username}/status/${props.data.id}`} rel="noopener noreferrer nofollow">{date.toISOString()}</a> - <a href={`/json/get/tweet/${props.data.id}`}>as json</a> - <a href={`/get/tweet/${props.data.id}`}>as html</a>
+            <a href={`https://twitter.com/${content.username}/status/${props.data.id}`} rel="noopener noreferrer nofollow" target='_top'>{date.toISOString()}</a>
+            {options.showLinks && <Fragment> - <a href={`/json/get/tweet/${props.data.id}`} target='_top'>as json</a> - <a href={`/get/tweet/${props.data.id}`} target='_top'>as html</a></Fragment>}
           </p>
         </div>
       </div>

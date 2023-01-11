@@ -26,6 +26,9 @@ body {
       background: var(--cendyne-hide);
       color: var(--cendyne-belly);
   }
+  body.iframe {
+    background: transparent;
+  }
   .high-tech-alert {
       background: var(--cendyne-hide-dark);
   }
@@ -567,4 +570,16 @@ a.fediverse-link, a.card-header-link {
 }
 .flex-no-shrink {
   flex-shrink: 0;
+}
+.inline-iframe {
+  width: 100%;
+  border: none;
+  overflow: hidden;
+}
+body.iframe {
+  margin: 0px;
+  margin-top: 15px;
+}
+.iframe article {
+  margin: 0;
 }

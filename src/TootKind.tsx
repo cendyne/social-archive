@@ -1,6 +1,7 @@
 /** @jsx jsx */
 /** @jsxFrag  Fragment */
 import { jsx, JSXNode, Fragment } from 'hono/jsx'
+import { RenderOptions } from './RenderOptions'
 
 interface TootEmoji {
   shortcode: string,
@@ -494,6 +495,7 @@ function sanitizeAndAddEmojis(emojis: EmojiMap, node: Child, depth: number) : Ch
 
     if (tag == 'a') {
       props['rel'] = 'ugc noreferer nofollow noopener'
+      props['target'] = '_top';
     }
 
     if (tag == 'span') {
@@ -537,7 +539,7 @@ function sanitizeAndAddEmojis(emojis: EmojiMap, node: Child, depth: number) : Ch
   }
 }
 
-export function TootKind(props: {data: {id: string, content: Toot}}) {
+export function TootKind(props: {data: {id: string, content: Toot}}, options: RenderOptions) {
   let content = props.data.content;
   let date = new Date(content.created_at);
   let accountUrl = content.account.url;
@@ -579,7 +581,7 @@ export function TootKind(props: {data: {id: string, content: Toot}}) {
 
   return <div class="card">
     <div class="card-header-bg" data-background={header}>
-      <a href={accountUrl} class="fediverse-link inline-flex">
+      <a href={accountUrl} class="fediverse-link inline-flex" target='_top'>
         <div class="card-header">
           <div class="card-icon">
             <img loading="lazy" class="card-icon-image" src={avatar + '?width=64'} />
@@ -620,7 +622,8 @@ export function TootKind(props: {data: {id: string, content: Toot}}) {
       })}
     </div>) : null}
     <div class="card-footer">
-      <a href={statusUrl}>{date.toLocaleString()}</a> - <a href={`/json/get/toot/${props.data.id}`}>as json</a> - <a href={`/get/toot/${props.data.id}`}>as html</a>
+      <a href={statusUrl} target='_top'>{date.toLocaleString()}</a>
+      {options.showLinks && <Fragment> - <a href={`/json/get/toot/${props.data.id}`} target='_top'>as json</a> - <a href={`/get/toot/${props.data.id}`} target='_top'>as html</a></Fragment>}
     </div>
   </div>;
 }

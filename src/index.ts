@@ -2,7 +2,10 @@ import { Hono } from 'hono'
 import { serveStatic } from 'hono/serve-static.module'
 import { bearerCheck } from './bearerCheck'
 import { Env, HonoEnv } from './environment'
+import { IframeExample } from './IframeExample'
+import { IframePage } from './IframePage'
 import { ListPage } from './ListPage'
+import { RenderOptions } from './RenderOptions'
 import { getKey } from './signature'
 import { SinglePage } from './SinglePage'
 import { TootKind } from './TootKind'
@@ -21,8 +24,19 @@ app.use('/static/*', async (c, next) => {
 	return response;
 })
 app.get('/js', async (c) =>{
-	let {host, pathname} = new URL(c.req.url);
-	const cachedRequest = new Request(`https://${host}${pathname}`);
+	let {host, pathname,searchParams} = new URL(c.req.url);
+	let cachedUrl = new URL(`https://${host}${pathname}`);
+	let loadIframeJs = false;
+	let loadInsideIframeJs = false;
+	if (searchParams.get('iframe') != undefined) {
+		cachedUrl.searchParams.set('iframe','');
+		loadIframeJs = true;
+	}
+	if (searchParams.get('iframe-inside') != undefined) {
+		cachedUrl.searchParams.set('iframe-inside','');
+		loadInsideIframeJs = true;
+	}
+	const cachedRequest = new Request(cachedUrl);
 	const cachedResponse = await caches.default.match(cachedRequest);
 	if (cachedResponse) {
 		return cachedResponse;
@@ -30,7 +44,16 @@ app.get('/js', async (c) =>{
 	const blurhash = await fetch('https://js.cdyn.dev/blurhash.min.js');
 	const youtube = await fetch('https://js.cdyn.dev/youtube.min.js');
 	const enhance = await fetch('https://js.cdyn.dev/enhance.min.js');
-	const response = new Response(`${await blurhash.text()}\n${await youtube.text()}\n${await enhance.text()}`, {
+	let js = `${await blurhash.text()}\n${await youtube.text()}\n${await enhance.text()}`;
+	if (loadIframeJs) {
+		const iframe = await fetch('https://js.cdyn.dev/iframe.min.js');
+		js += '\n' + await iframe.text();
+	}
+	if (loadInsideIframeJs) {
+		const iframe = await fetch('https://js.cdyn.dev/iframe-inside.min.js');
+		js += '\n' + await iframe.text();
+	}
+	const response = new Response(js, {
 		headers: new Headers([
 			['cache-control', 'max-age=3600']
 		])
@@ -228,15 +251,16 @@ app.get('/json/get/:kind/:id', async (c) => {
 	}
 })
 
-function mapKindToHtml(kind: string, result: {id: string, content: any}): any {
+
+function mapKindToHtml(kind: string, result: {id: string, content: any}, options: RenderOptions): any {
 	if (kind == 'tweet') {
-		return TweetKind({data: result});
+		return TweetKind({data: result}, options);
 	} else if (kind == 'youtube') {
-		return YoutubeKind({data: result});
+		return YoutubeKind({data: result}, options);
 	} else if (kind == 'toot') {
-		return TootKind({data: result});
+		return TootKind({data: result}, options);
 	} else {
-		return UnknownKind({data: result});
+		return UnknownKind({data: result}, options);
 	}
 }
 
@@ -251,7 +275,10 @@ app.get('/list/:kind', async (c) => {
 	if (result.error) {
 		return c.text(result.message, 400);
 	} else {
-		return c.html(ListPage(kind, result.results.map(result => mapKindToHtml(kind, result)), result.next, result.prev, result.last));
+		let options: RenderOptions = {
+			showLinks: true
+		}
+		return c.html(ListPage(kind, result.results.map(result => mapKindToHtml(kind, result, options)), result.next, result.prev, result.last));
 	}
 })
 
@@ -263,12 +290,36 @@ app.get('/get/:kind/:id', async (c) => {
 	}
 	const stmt = await c.env.DB.prepare('select kind_id, content from archive where kind = ? and kind_id = ?');
 	const result = await stmt.bind(kind, `${id}`).first<{content: any, kind_id: string}>();
+	const iframe = c.req.query('iframe');
+	const raw = c.req.query('raw');
 	if (result) {
 		const json = JSON.parse(result.content);
-		return c.html(SinglePage(kind, [mapKindToHtml(kind, {id: result.kind_id, content: json})]));
+		let options : RenderOptions = {
+			showLinks: true
+		};
+		if (iframe !== undefined || raw !== undefined) {
+			options.showLinks = false;
+		}
+		const html = mapKindToHtml(kind, {id: result.kind_id, content: json}, options);
+		if (raw !== undefined) {
+			return c.html(html);
+		}
+		if (iframe !== undefined) {
+			return c.html(IframePage(`${kind} - ${id}`, html));
+		}
+		return c.html(SinglePage(kind, [html]));
 	} else {
 		return c.text('Not found', 404);
 	}
+})
+
+app.get('/iframe-test/:kind/:id', async (c) => {
+	const kind = c.req.param('kind');
+	const id = c.req.param('id');
+	if (!kind || kind.length <= 0 || !id || id.length <= 0) {
+		return c.text('Kind or ID missing', 400);
+	}
+	return c.html(IframeExample(kind, id));
 })
 
 export default app

@@ -1,8 +1,9 @@
 /** @jsx jsx */
-/** @jsxFrag  Fragment */
-import { jsx } from 'hono/jsx'
+/** @jsxFrag Fragment */
+import { jsx, Fragment } from 'hono/jsx'
+import { RenderOptions } from './RenderOptions';
 
-export function YoutubeKind(props: {data: {id: string, content: {
+interface YoutubeContent {
   icon: string,
   poster: string,
   banner: string | null,
@@ -15,12 +16,15 @@ export function YoutubeKind(props: {data: {id: string, content: {
   channel_url: string,
   source_url: string,
   iso8601: string,
-}}}) {
+}
+interface YoutubeData {id: string, content: YoutubeContent}
+
+export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) {
   let content = props.data.content;
   let date = new Date(content.iso8601);
   const id = props.data.id;
   let header = <div class="card-header-bg" data-background={content.banner}>
-    <a href={content.channel_url} class="inline-flex card-header-link flex-no-shrink">
+    <a href={content.channel_url} class="inline-flex card-header-link flex-no-shrink" target='_top'>
       <div class="card-header">
         <div class="card-icon">
           <img loading="lazy" class="card-icon-image" src={content.icon + '?height=64'} />
@@ -30,14 +34,15 @@ export function YoutubeKind(props: {data: {id: string, content: {
         <div class="card-header-name">{content.name}</div>
       </div>
     </a>
-    <a href={content.source_url} class="inline-flex card-header-link flex-shrink">
+    <a href={content.source_url} class="inline-flex card-header-link flex-shrink" target='_top'>
       <div class="card-header-content flex-shrink all-rounded">
         <div class="card-header-name">{content.title}</div>
       </div>
     </a>
   </div>;
   let footer = <div class="card-footer">
-    <a href={content.source_url}>{date.toLocaleString()}</a> - <a href={`/json/get/youtube/${props.data.id}`}>as json</a> - <a href={`/get/youtube/${props.data.id}`}>as html</a>
+    <a href={content.source_url} target='_top'>{date.toLocaleString()}</a>
+    {options.showLinks && <Fragment> - <a href={`/json/get/youtube/${props.data.id}`} target='_top'>as json</a> - <a href={`/get/youtube/${props.data.id}`} target='_top'>as html</a></Fragment>}
   </div>;
   if (content.url) {
       return <div class="card">
