@@ -526,7 +526,7 @@ p:first-child, .mendoza-codeblock:first-child, iframe:first-child, ul:first-chil
   justify-content: center;
   flex-direction: column;
 }
-.card-header-bg[data-background] .card-header-content {
+.card-header-bg[data-background] .card-header-content, .card-header-bg[data-background-color] .card-header-content {
   background-color: var(--cendyne-hide-half);
 }
 .card-header-name {

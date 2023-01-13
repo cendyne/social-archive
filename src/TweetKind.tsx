@@ -1,6 +1,6 @@
 /** @jsx jsx */
 /** @jsxFrag  Fragment */
-import { Fragment, jsx } from 'hono/jsx'
+import { Fragment, jsx, JSXNode } from 'hono/jsx'
 import { RenderOptions } from './RenderOptions'
 interface TweetContent {
   name: string,
@@ -19,54 +19,177 @@ interface TweetContent {
     width: number,
     height: number,
     blurhash: string
-  }[], icon: string
+  }[],
+  icon: string,
+  banner?: string,
+  url?: string,
+  color?: string
 }
 interface TweetData {
   id: string,
   content: TweetContent
 }
 
+type Child = JSXNode | string | number | Child[]
+
+function parseTweet(content: string) : Child {
+  let result : Child[] = [];
+  let top = '';
+  let mode : 'text' | 'username' | 'hashtag' | 'link' = 'text';
+  let secure = false;
+  for (let char of content) {
+    if (mode == 'text') {
+      if (char == '@' && (top == '' || top.slice(-1).match(/^[^a-zA-Z0-9_]$/))) {
+        mode = 'username';
+        result.push(top);
+        top = '';
+        continue;
+      } else if (char == '#' && (top == '' || top.slice(-1).match(/^[^a-zA-Z0-9_]$/))) {
+        mode = 'hashtag';
+        result.push(top);
+        top = '';
+        continue;
+      } else if (top.endsWith('https://')) {
+        mode = 'link';
+        if (top.length > 8) {
+          result.push(top.slice(0, -8));
+        }
+        top = char;
+        secure = true;
+        continue;
+      } else if (top.endsWith('http://')) {
+        mode = 'link';
+        if (top.length > 8) {
+          result.push(top.slice(0, -7));
+        }
+        top = char;
+        secure = false;
+        continue;
+      }
+    } else if (mode == 'username') {
+      if (char == '@') {
+        if (top == '') {
+          result.push('@');
+        } else {
+          top = '@' + top + '@';
+          mode = 'text';
+        }
+        continue;
+      }
+      if (!char.match(/[a-zA-Z0-9_@]/)) {
+        if (top == '') {
+          top = '@' + char;
+          mode = 'text';
+          continue;
+        } else {
+          result.push(<a href={`https://twitter.com/${top}`} target='_top' rel='ugc noreferer nofollow noopener'>@{top}</a>);
+          mode = 'text';
+          top = char;
+          continue;
+        }
+      }
+    } else if (mode == 'hashtag') {
+      if (char == '#') {
+        if (top == '') {
+          result.push('#');
+        } else {
+          top = '#' + top + '#';
+          mode = 'text';
+        }
+        continue;
+      }
+      if (!char.match(/[a-zA-Z0-9_#]/)) {
+        if (top == '') {
+          top = '#' + char;
+          mode = 'text';
+          continue;
+        } else {
+          result.push(<a href={`https://twitter.com/hashtag/${top}`} target='_top' rel='ugc noreferer nofollow noopener'>#{top}</a>);
+          mode = 'text';
+          top = char;
+          continue;
+        }
+      }
+    } else if (mode == 'link') {
+      if (char.match(/[ \n;]/)) {
+        if (top.includes('.')) {
+          result.push(<a href={`http${secure ? 's' : ''}://${top}`} target='_top' rel='ugc noreferer nofollow noopener'>{top}</a>);
+          top = char;
+          mode = 'text';
+          continue;
+        }
+      }
+    }
+    top += char;
+  }
+  if (mode == 'text') {
+    result.push(top);
+  } else if (mode == 'username') {
+    result.push(<a href={`https://twitter.com/${top}`} target='_top' rel='ugc noreferer nofollow noopener'>@{top}</a>);
+  } else if (mode == 'hashtag') {
+    result.push(<a href={`https://twitter.com/hashtag/${top}`} target='_top' rel='ugc noreferer nofollow noopener'>#{top}</a>);
+  } else if (mode == 'link') {
+    result.push(<a href={`http${secure ? 's' : ''}://${top}`} target='_top' rel='ugc noreferer nofollow noopener'>{top}</a>);
+  }
+  return result;
+}
+
 export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
   let content = props.data.content;
   let date = new Date(content.timestamp * 1000);
-  return <div class="float-pair im-message">
-    <div class="flex gap1">
-      <div class="flex-auto">
-        <div class="im-message-right">
-          <div class="free-quote-name">
-            <a href={`https://twitter.com/${content.username}`} rel="noopener noreferrer nofollow" target='_top'>{content.name}</a>
+  let accountUrl = `https://twitter.com/${content.username}`;
+  let header = content.banner;
+  let avatar = content.icon;
+  let displayName = content.name;
+  let username = content.username;
+  let color = content.color;
+  let htmlContent = parseTweet(content.text);
+  let statusUrl = `https://twitter.com/${content.username}/status/${props.data.id}`;
+
+  return <div class="card">
+    <div class="card-header-bg" data-background={header} data-background-color={color}>
+      <a href={accountUrl} class="fediverse-link inline-flex" target='_top'>
+        <div class="card-header">
+          <div class="card-icon">
+            <img loading="lazy" class="card-icon-image" src={avatar && avatar + '?width=64'} />
           </div>
-          <p>
-            {content.text}
-          </p>
-          {content.photos && content.photos.map(photo =>
-            <div data-blurhash={photo.blurhash} data-height={photo.height} data-width={photo.width} class="blurhash-parent">
-              <a href={photo.url} rel="noopener" target="_blank">
-              <img loading="lazy" width={photo.width} height={photo.height} src={photo.url} class="simple-image blurhash-actual-image" alt="" />
-              </a>
-            </div>)}
-          {content.videos && content.videos.map(video =>
-            <video
-              controls
-              preload="none"
-              class="card-video"
-              data-ratio
-              data-width={video.width}
-              data-height={video.height}
-              poster={video.poster}>
-              <source src={video.url} type="video/mp4" />
-            </video>)}
-          <p>
-            <a href={`https://twitter.com/${content.username}/status/${props.data.id}`} rel="noopener noreferrer nofollow" target='_top'>{date.toISOString()}</a>
-            {options.showLinks && <Fragment> - <a href={`/json/get/tweet/${props.data.id}`} target='_top'>as json</a> - <a href={`/get/tweet/${props.data.id}`} target='_top'>as html</a></Fragment>}
-          </p>
         </div>
-      </div>
-      <div class="flex-none">
-        <div class="twitter-icon">
-          <img width="64" alt={content.name} src={content.icon} />
+        <div class="card-header-content">
+          <div class="card-header-name">{displayName}</div>
+          <div class="card-header-description">
+            <span class="fediverse-username">@{username}</span>
+            <span class="fediverse-instance">@twitter.com</span>
+          </div>
         </div>
-      </div>
+      </a>
+    </div>
+    {htmlContent && (<div class="card-content">
+      {htmlContent}
+    </div>)}
+    {content.photos.length > 0 ? (<div class="card-media">
+    {content.photos.map((photo) => {
+      return <div data-blurhash={photo.blurhash} data-height={photo.height} data-width={photo.width} class="blurhash-parent">
+      <img loading="lazy" width={photo.width} height={photo.height} src={photo.url} alt='tweet photo' class="simple-image blurhash-actual-image" />
+    </div>
+    })}
+    </div>) : null}
+    {content.videos.length > 0 ? (<div class="card-media">
+    {content.videos.map((video) => {
+      return <video
+      poster={video.poster}
+      class="card-video"
+      data-ratio
+      data-width={video.width}
+      data-height={video.height}
+      controls=""
+      preload="none">
+      <source src={video.url} type="video/mp4"/>
+    </video>
+    })}
+    </div>) : null}
+    <div class="card-footer">
+      <a href={statusUrl} target='_top'>{date.toLocaleString()}</a>
+      {options.showLinks && <Fragment> - <a href={`/json/get/tweet/${props.data.id}`} target='_top'>as json</a> - <a href={`/get/tweet/${props.data.id}`} target='_top'>as html</a></Fragment>}
     </div>
   </div>;
 }
