@@ -10,6 +10,6 @@ export function IframeExample(kind: string, id: string) {
       scrolling='no'
       sandbox='allow-scripts allow-popups allow-top-navigation'
       class='inline-iframe' id='potato'></iframe>
-    <script type="application/javascript" src="https://js.cdyn.dev/iframe.min.js" defer></script>
+    <script type="application/javascript" src="https://js.cdyn.dev/iframe.js?nocache" defer></script>
   </Layout>
 }

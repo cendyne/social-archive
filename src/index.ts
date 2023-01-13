@@ -2,7 +2,9 @@ import { Hono } from 'hono'
 import { serveStatic } from 'hono/serve-static.module'
 import { bearerCheck } from './bearerCheck'
 import { Env, HonoEnv } from './environment'
+import { FlexingPage } from './FlexingPage'
 import { IframeExample } from './IframeExample'
+import { IframeFlex } from './IframeFlex'
 import { IframePage } from './IframePage'
 import { ListPage } from './ListPage'
 import { RenderOptions } from './RenderOptions'
@@ -320,6 +322,14 @@ app.get('/iframe-test/:kind/:id', async (c) => {
 		return c.text('Kind or ID missing', 400);
 	}
 	return c.html(IframeExample(kind, id));
+})
+
+app.get('/iframe-example', async (c) => {
+	return c.html(FlexingPage('todo'));
+})
+
+app.get('/iframe-test', async (c) => {
+	return c.html(IframeFlex());
 })
 
 export default app
