@@ -166,15 +166,15 @@ async function listAscending(key: CryptoKey, env: Env, kind: string, next: strin
 	const {lastKindId, unixtime, direction} = openedToken;
 
 	// I have to use '!' because D1 (as of 2022-11-28) will coerce the value into a number
-	let results : D1Result<{kind_id: string, content: string, unixtime: number}>;
+	let results : D1Result<{kind_id: string, content: string, unixtime: number, archive_url: string | null}>;
 	if (direction == 'asc') {
-		const stmt = await env.DB.prepare(`SELECT kind_id, content, unixtime FROM archive WHERE kind = ? and kind_id > ? and unixtime >= ? ORDER BY unixtime ASC LIMIT ${PAGE_SIZE}`);
+		const stmt = await env.DB.prepare(`SELECT kind_id, content, unixtime, archive_url FROM archive WHERE kind = ? and kind_id > ? and unixtime >= ? ORDER BY unixtime ASC LIMIT ${PAGE_SIZE}`);
 		// '!' is the earliest character that sqlite does not truncate
 		// console.log(`SELECT kind_id, content, unixtime FROM archive WHERE kind = '${kind}' and kind_id > '${lastKindId}' and unixtime >= ${unixtime} ORDER BY unixtime ASC LIMIT ${PAGE_SIZE}`)
 		results = await stmt.bind(kind, `${lastKindId}`, unixtime).all();
 		// console.log('Results: ', results.results?.length)
 	} else if (direction == 'desc') {
-		const stmt = await env.DB.prepare(`SELECT kind_id, content, unixtime FROM archive WHERE kind = ? and kind_id < ? and unixtime <= ? ORDER BY unixtime DESC LIMIT ${PAGE_SIZE}`)
+		const stmt = await env.DB.prepare(`SELECT kind_id, content, unixtime, archive_url FROM archive WHERE kind = ? and kind_id < ? and unixtime <= ? ORDER BY unixtime DESC LIMIT ${PAGE_SIZE}`)
 		// '~' is the latest character
 		// console.log(`SELECT kind_id, content, unixtime FROM archive WHERE kind = '${kind}' and kind_id < '${lastKindId}' and unixtime <= ${unixtime} ORDER BY unixtime DESC LIMIT ${PAGE_SIZE}`);
 		results = await stmt.bind(kind, lastKindId, unixtime).all();
@@ -187,7 +187,11 @@ async function listAscending(key: CryptoKey, env: Env, kind: string, next: strin
 		let firstId: string | undefined;
 		let maxUnixtime = 0;
 		let minUnixtime = Number.MAX_SAFE_INTEGER;
-		let output: {id: string, content: any}[] = [];
+		let output: {
+			id: string,
+			content: any,
+			archive: string | null
+		}[] = [];
 		let sortedResults = results.results.sort((a, b) => a.unixtime - b.unixtime)
 		for (let result of sortedResults) {
 			counter++;
@@ -202,7 +206,11 @@ async function listAscending(key: CryptoKey, env: Env, kind: string, next: strin
 				nextId = result.kind_id;
 			}
 			// Remove the prefix when reading
-			output.push({id: result.kind_id, content: JSON.parse(result.content)});
+			output.push({
+				id: result.kind_id,
+				content: JSON.parse(result.content),
+				archive: result.archive_url
+			});
 		}
 		const next = await macNextToken(key, nextId, maxUnixtime, 'asc');
 		// Nearly everything is done, just need to prepare tokens that explore other ways
@@ -296,7 +304,7 @@ app.put('/archive/:kind/:id', async (c) => {
 })
 
 
-function mapKindToHtml(kind: string, result: {id: string, content: any}, options: RenderOptions): any {
+function mapKindToHtml(kind: string, result: {id: string, content: any, archive: string | null}, options: RenderOptions): any {
 	if (kind == 'tweet') {
 		return TweetKind({data: result}, options);
 	} else if (kind == 'youtube') {
@@ -333,8 +341,8 @@ app.get('/get/:kind/:id', async (c) => {
 	if (!kind || kind.length <= 0 || !id || id.length <= 0) {
 		return c.text('Kind or ID missing', 400);
 	}
-	const stmt = await c.env.DB.prepare('select kind_id, content from archive where kind = ? and kind_id = ?');
-	const result = await stmt.bind(kind, `${id}`).first<{content: any, kind_id: string}>();
+	const stmt = await c.env.DB.prepare('select kind_id, content, archive_url from archive where kind = ? and kind_id = ?');
+	const result = await stmt.bind(kind, `${id}`).first<{content: any, kind_id: string, archive_url: string}>();
 	const iframe = c.req.query('iframe');
 	const raw = c.req.query('raw');
 	const rss = c.req.query('rss');
@@ -347,7 +355,11 @@ app.get('/get/:kind/:id', async (c) => {
 		if (iframe !== undefined || raw !== undefined) {
 			options.showLinks = false;
 		}
-		const html = mapKindToHtml(kind, {id: result.kind_id, content: json}, options);
+		const html = mapKindToHtml(kind, {
+			id: result.kind_id,
+			content: json,
+			archive: result.archive_url || null
+		}, options);
 		if (raw !== undefined || rss !== undefined) {
 			return c.html(html);
 		}
@@ -383,18 +395,26 @@ app.post('/batch-read', async (c) => {
 	}
 	// We're good
 	let results = [];
-	const stmt = await c.env.DB.prepare('select kind_id, content from archive where kind = ? and kind_id = ?');
+	const stmt = await c.env.DB.prepare('select kind_id, content, archive_url from archive where kind = ? and kind_id = ?');
 	for (let [kind, id] of body) {
 		try {
-			const result = await stmt.bind(kind, `${id}`).first<{content: any, kind_id: string}>();
+			const result = await stmt.bind(kind, `${id}`).first<{content: any, kind_id: string, archive_url: string | null}>();
 			let value = null;
 			if (result) {
 				const json = JSON.parse(result.content);
-				const inline = html`${mapKindToHtml(kind, {id: result.kind_id, content: json}, {
+				const inline = html`${mapKindToHtml(kind, {
+					id: result.kind_id,
+					content: json,
+					archive: result.archive_url || null
+				}, {
 					rss: false,
 					showLinks: false
 				})}`;
-				const rss = html`${mapKindToHtml(kind, {id: result.kind_id, content: json}, {
+				const rss = html`${mapKindToHtml(kind, {
+					id: result.kind_id,
+					content: json,
+					archive: result.archive_url || null
+				}, {
 					rss: true,
 					showLinks: false
 				})}`;

@@ -18,12 +18,17 @@ interface YoutubeContent {
   source_url: string,
   iso8601: string,
 }
-interface YoutubeData {id: string, content: YoutubeContent}
+interface YoutubeData {
+  id: string,
+  content: YoutubeContent,
+  archive: string | null
+}
 
 export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) {
   let content = props.data.content;
   let date = new Date(content.iso8601);
   const id = props.data.id;
+  let archiveUrl = props.data.archive || null;
 
   if (options.rss) {
     let {width, height, url} = resizeUrl({
@@ -40,6 +45,7 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
       <strong><a href={content.channel_url}>{content.name}</a></strong>
       {' '}
       <a href={content.source_url}>{content.title}</a>
+      {archiveUrl && [' ', <a href={archiveUrl}>(archived)</a>]}
     </blockquote>
   }
 
@@ -63,6 +69,7 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
   </div>;
   let footer = <div class="card-footer">
     <a href={content.source_url} target='_top'>{date.toLocaleString()}</a>
+    {archiveUrl && [' ', <a href={archiveUrl} target='_top'>(archived)</a>]}
     {options.showLinks && <Fragment> - <a href={`/json/get/youtube/${props.data.id}`} target='_top'>as json</a> - <a href={`/get/youtube/${props.data.id}`} target='_top'>as html</a></Fragment>}
   </div>;
   if (content.url) {

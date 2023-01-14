@@ -29,6 +29,7 @@ interface TweetContent {
 interface TweetData {
   id: string,
   content: TweetContent
+  archive: null | string
 }
 
 type Child = JSXNode | string | number | Child[]
@@ -155,9 +156,9 @@ export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
   if (!content.videos) {
     content.videos = [];
   }
+  let archiveUrl = props.data.archive || null;
 
   if (options.rss) {
-
     return <blockquote>
       <p>{htmlContent}</p>
       {content.photos.map((photo) => {
@@ -176,6 +177,7 @@ export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
       <strong><a href={accountUrl}>{displayName} ({username})</a></strong>
       {' '}
       <a href={statusUrl}>{postedDate}</a>
+      {archiveUrl && [' ', <a href={archiveUrl}>(archived)</a>]}
     </blockquote>
   }
 
@@ -222,6 +224,7 @@ export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
     </div>) : null}
     <div class="card-footer">
       <a href={statusUrl} target='_top'>{postedDate}</a>
+      {archiveUrl && [' ', <a href={archiveUrl} target='_top'>(archived)</a>]}
       {options.showLinks && <Fragment> - <a href={`/json/get/tweet/${props.data.id}`} target='_top'>as json</a> - <a href={`/get/tweet/${props.data.id}`} target='_top'>as html</a></Fragment>}
     </div>
   </div>;

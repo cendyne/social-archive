@@ -540,7 +540,13 @@ function sanitizeAndAddEmojis(emojis: EmojiMap, node: Child, depth: number) : Ch
   }
 }
 
-export function TootKind(props: {data: {id: string, content: Toot}}, options: RenderOptions) {
+interface TootData {
+  id: string,
+  content: Toot,
+  archive: string | null
+}
+
+export function TootKind(props: {data: TootData}, options: RenderOptions) {
   let content = props.data.content;
   let date = new Date(content.created_at);
   let accountUrl = content.account.url;
@@ -580,7 +586,7 @@ export function TootKind(props: {data: {id: string, content: Toot}}, options: Re
       }
     }
   }
-
+  let archiveUrl = props.data.archive || null;
 
   if (options.rss) {
     return <blockquote>
@@ -612,6 +618,7 @@ export function TootKind(props: {data: {id: string, content: Toot}}, options: Re
       <strong><a href={accountUrl}>{displayName} (@{username}@{hostname})</a></strong>
       {' '}
       <a href={statusUrl}>{postedDate}</a>
+      {archiveUrl && [' ', <a href={archiveUrl}>(archived)</a>]}
     </blockquote>
   }
 
@@ -659,6 +666,7 @@ export function TootKind(props: {data: {id: string, content: Toot}}, options: Re
     </div>) : null}
     <div class="card-footer">
       <a href={statusUrl} target='_top'>{postedDate}</a>
+      {archiveUrl && [' ', <a href={archiveUrl} target='_top'>(archived)</a>]}
       {options.showLinks && <Fragment> - <a href={`/json/get/toot/${props.data.id}`} target='_top'>as json</a> - <a href={`/get/toot/${props.data.id}`} target='_top'>as html</a></Fragment>}
     </div>
   </div>;
