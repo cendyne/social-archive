@@ -83,7 +83,13 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
   } else {
     return <div class="card">
       {header}
-      <div data-youtube-poster={content.poster} data-width={content.width} data-height={content.height} data-youtube-id={id} style={`aspect-ratio: ${content.width}/${content.height}`} class="youtube-embed">
+      <div
+        data-youtube-poster={content.poster}
+        data-width={content.width}
+        data-height={content.height}
+        data-youtube-id={id}
+        data-ratio
+        class="youtube-embed">
       <noscript>
         <iframe class="youtube-iframe" width="100%" height="363" src={`https://www.youtube-nocookie.com/embed/${id}`} title="Youtube" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen=""></iframe>
       </noscript>

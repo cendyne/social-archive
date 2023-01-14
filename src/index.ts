@@ -344,24 +344,32 @@ app.post('/batch-read', async (c) => {
 	let results = [];
 	const stmt = await c.env.DB.prepare('select kind_id, content from archive where kind = ? and kind_id = ?');
 	for (let [kind, id] of body) {
-		const result = await stmt.bind(kind, `${id}`).first<{content: any, kind_id: string}>();
-		let value = null;
-		if (result) {
-			const json = JSON.parse(result.content);
-			const inline = html`${mapKindToHtml(kind, {id: result.kind_id, content: json}, {
-				rss: false,
-				showLinks: false
-			})}`;
-			const rss = html`${mapKindToHtml(kind, {id: result.kind_id, content: json}, {
-				rss: true,
-				showLinks: false
-			})}`;
-			value = {inline, rss}
+		try {
+			const result = await stmt.bind(kind, `${id}`).first<{content: any, kind_id: string}>();
+			let value = null;
+			if (result) {
+				const json = JSON.parse(result.content);
+				const inline = html`${mapKindToHtml(kind, {id: result.kind_id, content: json}, {
+					rss: false,
+					showLinks: false
+				})}`;
+				const rss = html`${mapKindToHtml(kind, {id: result.kind_id, content: json}, {
+					rss: true,
+					showLinks: false
+				})}`;
+				value = {inline, rss}
+			}
+			results.push({
+				key: [kind, id],
+				value
+			})
+		} catch (e) {
+			console.log(kind, id, e, e instanceof Error ? e.stack : null);
+			results.push({
+				key: [kind, id],
+				value: null
+			})
 		}
-		results.push({
-			key: [kind, id],
-			value
-		})
 	}
 	return c.json({
 		results

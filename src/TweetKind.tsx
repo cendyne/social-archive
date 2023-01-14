@@ -149,14 +149,15 @@ export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
   let htmlContent = parseTweet(content.text);
   let statusUrl = `https://twitter.com/${content.username}/status/${props.data.id}`;
   let postedDate = date.toLocaleString();
+  if (!content.photos) {
+    content.photos = [];
+  }
+  if (!content.videos) {
+    content.videos = [];
+  }
 
   if (options.rss) {
-    if (!content.photos) {
-      content.photos = [];
-    }
-    if (!content.videos) {
-      content.videos = [];
-    }
+
     return <blockquote>
       <p>{htmlContent}</p>
       {content.photos.map((photo) => {
