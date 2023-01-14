@@ -2,6 +2,7 @@
 /** @jsxFrag  Fragment */
 import { Fragment, jsx, JSXNode } from 'hono/jsx'
 import { RenderOptions } from './RenderOptions'
+import { resizeUrl } from './utils'
 interface TweetContent {
   name: string,
   username: string,
@@ -134,6 +135,8 @@ function parseTweet(content: string) : Child {
   return result;
 }
 
+
+
 export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
   let content = props.data.content;
   let date = new Date(content.timestamp * 1000);
@@ -145,6 +148,35 @@ export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
   let color = content.color;
   let htmlContent = parseTweet(content.text);
   let statusUrl = `https://twitter.com/${content.username}/status/${props.data.id}`;
+  let postedDate = date.toLocaleString();
+
+  if (options.rss) {
+    if (!content.photos) {
+      content.photos = [];
+    }
+    if (!content.videos) {
+      content.videos = [];
+    }
+    return <blockquote>
+      <p>{htmlContent}</p>
+      {content.photos.map((photo) => {
+        let {width, height, url} = resizeUrl(photo);
+        return <p>
+          <img loading="lazy" width={width} height={height} src={url} alt='tweet photo'/>
+        </p>
+      })}
+      {content.videos.map((video) => {
+        let {width, height, url} = resizeUrl({url: video.poster, height: video.height, width: video.width});
+        return <p>
+          <img loading="lazy" width={width} height={height} src={url} alt='Embedded video'/><br />
+          <small><em>See website for video</em></small>
+        </p>
+      })}
+      <strong><a href={accountUrl}>{displayName} ({username})</a></strong>
+      {' '}
+      <a href={statusUrl}>{postedDate}</a>
+    </blockquote>
+  }
 
   return <div class="card">
     <div class="card-header-bg" data-background={header} data-background-color={color}>
@@ -188,7 +220,7 @@ export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
     })}
     </div>) : null}
     <div class="card-footer">
-      <a href={statusUrl} target='_top'>{date.toLocaleString()}</a>
+      <a href={statusUrl} target='_top'>{postedDate}</a>
       {options.showLinks && <Fragment> - <a href={`/json/get/tweet/${props.data.id}`} target='_top'>as json</a> - <a href={`/get/tweet/${props.data.id}`} target='_top'>as html</a></Fragment>}
     </div>
   </div>;

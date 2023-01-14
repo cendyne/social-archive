@@ -278,7 +278,8 @@ app.get('/list/:kind', async (c) => {
 		return c.text(result.message, 400);
 	} else {
 		let options: RenderOptions = {
-			showLinks: true
+			showLinks: true,
+			rss: false,
 		}
 		return c.html(ListPage(kind, result.results.map(result => mapKindToHtml(kind, result, options)), result.next, result.prev, result.last));
 	}
@@ -294,16 +295,18 @@ app.get('/get/:kind/:id', async (c) => {
 	const result = await stmt.bind(kind, `${id}`).first<{content: any, kind_id: string}>();
 	const iframe = c.req.query('iframe');
 	const raw = c.req.query('raw');
+	const rss = c.req.query('rss');
 	if (result) {
 		const json = JSON.parse(result.content);
 		let options : RenderOptions = {
-			showLinks: true
+			showLinks: true,
+			rss: rss !== undefined
 		};
 		if (iframe !== undefined || raw !== undefined) {
 			options.showLinks = false;
 		}
 		const html = mapKindToHtml(kind, {id: result.kind_id, content: json}, options);
-		if (raw !== undefined) {
+		if (raw !== undefined || rss !== undefined) {
 			return c.html(html);
 		}
 		if (iframe !== undefined) {

@@ -2,6 +2,7 @@
 /** @jsxFrag  Fragment */
 import { jsx, JSXNode, Fragment } from 'hono/jsx'
 import { RenderOptions } from './RenderOptions'
+import { resizeUrl } from './utils'
 
 interface TootEmoji {
   shortcode: string,
@@ -559,7 +560,8 @@ export function TootKind(props: {data: {id: string, content: Toot}}, options: Re
     emojis[emoji.shortcode] = emoji;
   }
   let displayName = parseEmojis(emojis, displayNameText);
-  let parsedHtml = parseHtml(content.content)
+  let parsedHtml = parseHtml(content.content);
+  let postedDate = date.toLocaleString();
   let htmlContent;
   try {
     htmlContent = sanitizeAndAddEmojis(emojis, parsedHtml, 0);
@@ -577,6 +579,40 @@ export function TootKind(props: {data: {id: string, content: Toot}}, options: Re
         htmlContent = null;
       }
     }
+  }
+
+
+  if (options.rss) {
+    return <blockquote>
+      <p>{htmlContent}</p>
+      {content.media_attachments.map((media) => {
+        if (media.type == 'image') {
+          let {width, height, url} = resizeUrl({
+            url: media.url,
+            width: media.meta.original.width,
+            height: media.meta.original.height
+          });
+          return <p>
+            <img loading="lazy" width={width} height={height} src={url} alt={media.description}/>
+          </p>
+        } else if (media.type == 'video') {
+          let {width, height, url} = resizeUrl({
+            url: media.preview_url,
+            width: media.meta.original.width,
+            height: media.meta.original.height
+          });
+          return <p>
+            <img loading="lazy" width={width} height={height} src={url} alt={media.description} /><br />
+            <small><em>See website for video</em></small>
+          </p>
+        } else {
+          return 'UNSUPPORTED MEDIA';
+        }
+      })}
+      <strong><a href={accountUrl}>{displayName} (@{username}@{hostname})</a></strong>
+      {' '}
+      <a href={statusUrl}>{postedDate}</a>
+    </blockquote>
   }
 
   return <div class="card">
@@ -622,7 +658,7 @@ export function TootKind(props: {data: {id: string, content: Toot}}, options: Re
       })}
     </div>) : null}
     <div class="card-footer">
-      <a href={statusUrl} target='_top'>{date.toLocaleString()}</a>
+      <a href={statusUrl} target='_top'>{postedDate}</a>
       {options.showLinks && <Fragment> - <a href={`/json/get/toot/${props.data.id}`} target='_top'>as json</a> - <a href={`/get/toot/${props.data.id}`} target='_top'>as html</a></Fragment>}
     </div>
   </div>;

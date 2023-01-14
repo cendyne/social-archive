@@ -2,6 +2,7 @@
 /** @jsxFrag Fragment */
 import { jsx, Fragment } from 'hono/jsx'
 import { RenderOptions } from './RenderOptions';
+import { resizeUrl } from './utils';
 
 interface YoutubeContent {
   icon: string,
@@ -23,6 +24,26 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
   let content = props.data.content;
   let date = new Date(content.iso8601);
   const id = props.data.id;
+
+  if (options.rss) {
+    let {width, height, url} = resizeUrl({
+      url: content.poster,
+      width: content.width,
+      height: content.height
+    })
+    return <blockquote>
+      <p>
+        <a href={content.source_url}><img src={url} alt={content.title} width={width} height={height} loading="lazy" /></a>
+        <br />
+        <small><em>See youtube for video</em></small>
+      </p>
+      <strong><a href={content.channel_url}>{content.name}</a></strong>
+      {' '}
+      <a href={content.source_url}>{content.title}</a>
+    </blockquote>
+  }
+
+
   let header = <div class="card-header-bg" data-background={content.banner}>
     <a href={content.channel_url} class="inline-flex card-header-link flex-no-shrink" target='_top'>
       <div class="card-header">

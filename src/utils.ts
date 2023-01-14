@@ -27,3 +27,24 @@ export function encodeBase64Url(array: ArrayBuffer): string {
 export function decodeBase64Url(text: string): Uint8Array {
   return decodeBase64(text.replace(/-/g, '+').replace(/_/g, '/'));
 }
+
+export function resizeUrl(opts: {width?: number, height?: number, url: string}) : {width?: number, height?: number, url: string} {
+  let {width, height, url} = opts;
+  let originalWidth = width;
+  width = width && Math.min(width, 600);
+  height = height && width && originalWidth && Math.ceil(height * (width / originalWidth));
+  if (width) {
+    try {
+      let parsedUrl = new URL(url);
+      parsedUrl.searchParams.append('width', `${width}`);
+      url = parsedUrl.toString();
+    } catch (e) {
+      // Sucks
+    }
+  }
+  return {
+    width,
+    height,
+    url
+  }
+}
