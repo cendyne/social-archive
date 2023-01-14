@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { html } from 'hono/html'
 import { serveStatic } from 'hono/serve-static.module'
 import { bearerCheck } from './bearerCheck'
 import { Env, HonoEnv } from './environment'
@@ -317,6 +318,55 @@ app.get('/get/:kind/:id', async (c) => {
 		return c.text('Not found', 404);
 	}
 })
+
+type ReadTypeId = [kind: string, id: string];
+type BatchReadRequest = ReadTypeId[];
+
+app.post('/batch-read', async (c) => {
+	const errMsg = 'Body must be a json array of kinds and ids, as such: [["tweet", "2222"]]';
+	let body : BatchReadRequest;
+	try {
+		body = await c.req.json<BatchReadRequest>();
+	} catch (e) {
+		return c.text(errMsg, 400);
+	}
+
+	if (!body || !Array.isArray(body)) {
+		return c.text(errMsg, 400);
+	}
+	// validate
+	for (let entry of body) {
+		if (!Array.isArray(entry) || entry.length != 2) {
+			return c.text(errMsg, 400);
+		}
+	}
+	// We're good
+	let results = [];
+	const stmt = await c.env.DB.prepare('select kind_id, content from archive where kind = ? and kind_id = ?');
+	for (let [kind, id] of body) {
+		const result = await stmt.bind(kind, `${id}`).first<{content: any, kind_id: string}>();
+		let value = null;
+		if (result) {
+			const json = JSON.parse(result.content);
+			const inline = html`${mapKindToHtml(kind, {id: result.kind_id, content: json}, {
+				rss: false,
+				showLinks: false
+			})}`;
+			const rss = html`${mapKindToHtml(kind, {id: result.kind_id, content: json}, {
+				rss: true,
+				showLinks: false
+			})}`;
+			value = {inline, rss}
+		}
+		results.push({
+			key: [kind, id],
+			value
+		})
+	}
+	return c.json({
+		results
+	});
+});
 
 app.get('/iframe-test/:kind/:id', async (c) => {
 	const kind = c.req.param('kind');
