@@ -5,6 +5,7 @@ export function FlexingPage(title: string) {
   return <html>
   <head>
     <link rel="stylesheet" href="/static/main.css" />
+    <link rel="stylesheet" href="/static/testing.css" />
     <link rel="stylesheet" href="https://fonts.cdyn.dev/dejavu-fonts/regular.css" />
     <meta NAME="robots" CONTENT="noindex,nofollow" />
     <title>{title}</title>

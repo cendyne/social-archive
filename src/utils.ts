@@ -31,7 +31,7 @@ export function decodeBase64Url(text: string): Uint8Array {
 export function resizeUrl(opts: {width?: number, height?: number, url: string}) : {width?: number, height?: number, url: string} {
   let {width, height, url} = opts;
   let originalWidth = width;
-  width = width && Math.min(width, 600);
+  width = (width && Math.min(width, 645) || 645);
   height = height && width && originalWidth && Math.ceil(height * (width / originalWidth));
   if (width) {
     try {
