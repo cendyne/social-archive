@@ -68,6 +68,7 @@ app.get('/js', async (c) =>{
 interface NewBody {
 	time: string
 	content: any
+	archive?: string
 }
 
 app.post('/new/:kind/:id', bearerCheck(), async (c) => {
@@ -89,6 +90,9 @@ app.post('/new/:kind/:id', bearerCheck(), async (c) => {
 	if (!body.time) {
 		return c.text('Please supply json with a "time" field', 400);
 	}
+	if (body.archive && !body.archive.match(/^https?:\/\/\S+$/)) {
+		return c.text('Please supply json with a "archive" field with a valid url', 400);
+	}
 	let time : Date;
 	try {
 		time = new Date(body.time);
@@ -99,8 +103,8 @@ app.post('/new/:kind/:id', bearerCheck(), async (c) => {
 		return c.text('Please supply json with a "content" field', 400);
 	}
 	const content = JSON.stringify(body.content);
-	const {success} = await c.env.DB.prepare('INSERT OR REPLACE INTO archive (kind, kind_id, unixtime, content) values (?, ?, ?, ?)')
-	.bind(kind, `${id}`, Math.ceil(time.getTime() / 1000), content)
+	const {success} = await c.env.DB.prepare('INSERT OR REPLACE INTO archive (kind, kind_id, unixtime, content, archive_url) values (?, ?, ?, ?, ?)')
+	.bind(kind, `${id}`, Math.ceil(time.getTime() / 1000), content, body.archive)
 	.run();
 	if (!success) {
 		return c.text('Failed', 500);
@@ -249,6 +253,43 @@ app.get('/json/get/:kind/:id', async (c) => {
 			content: json,
 			archive: result.archive_url
 		});
+	} else {
+		return c.text('Not found', 404);
+	}
+})
+
+app.put('/archive/:kind/:id', async (c) => {
+	const kind = c.req.param('kind');
+	const id = c.req.param('id');
+	if (!kind || kind.length <= 0 || !id || id.length <= 0) {
+		return c.text('Kind or ID missing', 400);
+	}
+	let url : string | null = await c.req.text();
+	console.log('url',url)
+	if (url == undefined || (url != '' && !url.match(/^https?:\/\/\S+$/))) {
+		return c.text('Expecting a URL', 400);
+	}
+	if (url == '') {
+		url = null;
+	}
+	const stmt = await c.env.DB.prepare('select archive_url from archive where kind = ? and kind_id = ?');
+	const result = await stmt.bind(kind, `${id}`).first<{archive_url: string }>();
+	if (result) {
+		let old_url = result.archive_url;
+		let updateStmt = await c.env.DB.prepare('update archive set archive_url = ? where kind = ? and kind_id = ?');
+		let status = await updateStmt.bind(url, kind, `${id}`).run();
+		if (status.success) {
+			return c.json({
+				status: 'success',
+				old: old_url,
+				'new': url
+			}, 200);
+		} else {
+			return c.json({
+				status: 'failure',
+				message: status.error
+			}, 200);
+		}
 	} else {
 		return c.text('Not found', 404);
 	}
