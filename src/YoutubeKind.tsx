@@ -49,7 +49,12 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
     </blockquote>
   }
 
-  let resizedBanner = content.banner && resizeUrl({url: content.banner})
+  let banner = content.banner
+  if (banner == 'https://c.cdyn.dev/null') {
+    banner = null;
+  }
+
+  let resizedBanner = banner && resizeUrl({url: banner})
   let bannerUrl = resizedBanner && resizedBanner.url;
 
   let header = <div class="card-header-bg" data-background={bannerUrl}>

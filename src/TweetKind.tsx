@@ -150,6 +150,9 @@ export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
   let htmlContent = parseTweet(content.text);
   let statusUrl = `https://twitter.com/${content.username}/status/${props.data.id}`;
   let postedDate = date.toLocaleString();
+  if (header == 'https://c.cdyn.dev/null') {
+    header = undefined;
+  }
   if (!content.photos) {
     content.photos = [];
   }

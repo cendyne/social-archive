@@ -20,7 +20,7 @@ interface TootAccount {
   display_name: string,
   url: string,
   avatar: string,
-  header: string,
+  header: string | null,
   emojis: TootEmoji[],
   avatar_blurhash: string,
   header_blurhash: string,
@@ -557,6 +557,10 @@ export function TootKind(props: {data: TootData}, options: RenderOptions) {
   let header = content.account.header;
   let statusUrl = content.url;
   let media = content.media_attachments;
+
+  if (header == 'https://c.cdyn.dev/null') {
+    header = null;
+  }
 
   let emojis : EmojiMap = {};
   for (let emoji of content.emojis) {
