@@ -44,18 +44,19 @@ app.get('/js', async (c) =>{
 	if (cachedResponse) {
 		return cachedResponse;
 	}
-	const blurhash = await fetch('https://js.cdyn.dev/blurhash.min.js');
-	const youtube = await fetch('https://js.cdyn.dev/youtube.min.js');
-	const enhance = await fetch('https://js.cdyn.dev/enhance.min.js');
-	let js = `${await blurhash.text()}\n${await youtube.text()}\n${await enhance.text()}`;
+	let url = new URL('https://js.cdyn.dev/combo');
+	url.searchParams.append('p', 'blurhash.min.js')
+	url.searchParams.append('p', 'youtube.min.js')
+	url.searchParams.append('p', 'enhance.min.js')
 	if (loadIframeJs) {
-		const iframe = await fetch('https://js.cdyn.dev/iframe.min.js');
-		js += '\n' + await iframe.text();
+		url.searchParams.append('p', 'iframe.min.js')
 	}
 	if (loadInsideIframeJs) {
-		const iframe = await fetch('https://js.cdyn.dev/iframe-inside.min.js');
-		js += '\n' + await iframe.text();
+		url.searchParams.append('p', 'iframe-inside.min.js')
 	}
+
+	const jsResponse = await fetch(url.toString());
+	let js = await jsResponse.text();
 	const response = new Response(js, {
 		headers: new Headers([
 			['cache-control', 'max-age=3600']
