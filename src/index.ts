@@ -71,7 +71,34 @@ interface NewBody {
 	content: any
 	archive?: string
 }
-
+app.patch('/patch/:kind/:id', bearerCheck(), async (c) => {
+	const kind = c.req.param('kind');
+	const id = c.req.param('id');
+	if (!kind || kind.length <= 0 || !id || id.length <= 0) {
+		return c.text('Kind or ID missing', 400);
+	}
+	// console.log('id type: ', typeof id)
+	let body : NewBody;
+	try {
+		body = await c.req.json<NewBody>();
+	} catch (e) {
+		return c.text('Missing body or invalid json', 400);
+	}
+	if (!body) {
+		return c.text('Send json', 400)
+	}
+	if (!body.content) {
+		return c.text('Please supply json with a "content" field', 400);
+	}
+	const content = JSON.stringify(body.content);
+	const {success} = await c.env.DB.prepare('UPDATE archive set content = ? where kind = ? and kind_id = ?')
+	.bind(content, kind, `${id}`)
+	.run();
+	if (!success) {
+		return c.text('Failed', 500);
+	}
+	return c.text('OK');
+});
 app.post('/new/:kind/:id', bearerCheck(), async (c) => {
 	const kind = c.req.param('kind');
 	const id = c.req.param('id');
@@ -267,7 +294,7 @@ app.get('/json/get/:kind/:id', async (c) => {
 	}
 })
 
-app.put('/archive/:kind/:id', async (c) => {
+app.put('/archive/:kind/:id', bearerCheck(), async (c) => {
 	const kind = c.req.param('kind');
 	const id = c.req.param('id');
 	if (!kind || kind.length <= 0 || !id || id.length <= 0) {
