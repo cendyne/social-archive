@@ -206,9 +206,7 @@ export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
     </div>)}
     {content.photos.length > 0 ? (<div class="card-media">
     {content.photos.map((photo) => {
-      return <div data-blurhash={photo.blurhash} data-height={photo.height} data-width={photo.width} class="blurhash-parent">
-      <img loading="lazy" width={photo.width} height={photo.height} src={photo.url} alt='tweet photo' class="simple-image blurhash-actual-image" />
-    </div>
+      return <img loading="lazy" data-blurhash={photo.blurhash} data-height={photo.height} data-width={photo.width} src={photo.url} alt='tweet photo' class="simple-image blurhash-actual-image" />
     })}
     </div>) : null}
     {content.videos.length > 0 ? (<div class="card-media">

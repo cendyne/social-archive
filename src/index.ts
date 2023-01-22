@@ -45,7 +45,7 @@ app.get('/js', async (c) =>{
 		return cachedResponse;
 	}
 	let url = new URL('https://js.cdyn.dev/combo');
-	url.searchParams.append('p', 'blurhash.min.js')
+	url.searchParams.append('p', 'blurhash2.min.js')
 	url.searchParams.append('p', 'youtube.min.js')
 	url.searchParams.append('p', 'enhance.min.js')
 	if (loadIframeJs) {

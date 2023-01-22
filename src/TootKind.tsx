@@ -649,9 +649,7 @@ export function TootKind(props: {data: TootData}, options: RenderOptions) {
     {media.length > 0 ? (<div class="card-media">
       {media.map((m) => {
         if (m.type == 'image') {
-          return <div data-blurhash={m.blurhash} data-height={m.meta.original.height} data-width={m.meta.original.width} class="blurhash-parent">
-            <img loading="lazy" width={m.meta.original.width} height={m.meta.original.height} src={m.url} alt={m.description} class="simple-image blurhash-actual-image" />
-          </div>
+          return <img loading="lazy" data-blurhash={m.blurhash} data-height={m.meta.original.height} data-width={m.meta.original.width} src={m.url} alt={m.description} class="simple-image blurhash-actual-image" />
         } else if (m.type == 'video') {
           return <video
             poster={m.preview_url}
