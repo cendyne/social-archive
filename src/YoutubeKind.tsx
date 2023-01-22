@@ -61,7 +61,7 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
     <a href={content.channel_url} class="inline-flex card-header-link flex-no-shrink" target='_top'>
       <div class="card-header">
         <div class="card-icon">
-          <img loading="lazy" class="card-icon-image" src={content.icon + '?height=64'} />
+          <img loading="lazy" class="card-icon-image" src={content.icon + '?height=64'} alt="" />
         </div>
       </div>
       <div class="card-header-content">
