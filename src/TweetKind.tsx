@@ -189,7 +189,7 @@ export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
       <a href={accountUrl} class="fediverse-link inline-flex" target='_top'>
         <div class="card-header">
           <div class="card-icon">
-            <img loading="lazy" class="card-icon-image" src={avatar && avatar + '?width=64'} />
+            <img loading="lazy" class="card-icon-image" src={avatar && avatar + '?width=64'} alt="" />
           </div>
         </div>
         <div class="card-header-content">
