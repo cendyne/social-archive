@@ -113,7 +113,7 @@ function parseTweet(content: string) : Child {
         }
       }
     } else if (mode == 'link') {
-      if (char.match(/[ \n;]/)) {
+      if (char.match(/[ \n;\)\()]/)) {
         if (top.includes('.')) {
           result.push(<a href={`http${secure ? 's' : ''}://${top}`} target='_top' rel='ugc noreferer nofollow noopener'>{top}</a>);
           top = char;
