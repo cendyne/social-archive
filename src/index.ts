@@ -13,6 +13,7 @@ import { getKey } from './signature'
 import { SinglePage } from './SinglePage'
 import { TootKind } from './TootKind'
 import { TweetKind } from './TweetKind'
+import { VimeoKind } from './VimeoKind'
 import { UnknownKind } from './UnknownKind'
 import { decodeBase64Url, encodeBase64Url } from './utils'
 import { YoutubeKind } from './YoutubeKind'
@@ -339,6 +340,8 @@ function mapKindToHtml(kind: string, result: {id: string, content: any, archive:
 		return YoutubeKind({data: result}, options);
 	} else if (kind == 'toot') {
 		return TootKind({data: result}, options);
+	} else if (kind == 'vimeo') {
+		return VimeoKind({data: result}, options);
 	} else {
 		return UnknownKind({data: result}, options);
 	}
