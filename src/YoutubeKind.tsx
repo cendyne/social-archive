@@ -58,7 +58,7 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
   let bannerUrl = resizedBanner && resizedBanner.url;
 
   let header = <div class="card-header-bg" data-background={bannerUrl}>
-    <a href={content.channel_url} class="inline-flex card-header-link flex-no-shrink" target='_top'>
+    <a href={content.channel_url} class="card-header-link card-channel-link" target='_top'>
       <div class="card-header">
         <div class="card-icon">
           <img loading="lazy" class="card-icon-image" src={content.icon + '?height=64'} alt="" />
