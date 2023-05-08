@@ -676,6 +676,23 @@ a.card-header-link {
   color: inherit;
 }
 
+.card-channel-link {
+  display: none;
+}
+
+@media screen and (max-width: 28em) {
+  .card-header-bg {
+    flex-wrap: wrap;
+  }
+}
+@media screen and (min-width: 38em) {
+  .card-channel-link {
+    display: flex;
+    min-width: 15em;
+    flex-shrink: 0;
+  }
+}
+
 .fediverse-username {
   color: var(--cendyne-belly);
 }
