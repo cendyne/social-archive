@@ -28,12 +28,13 @@ export function VimeoKind(props: {data: VimeoData}, options: RenderOptions) {
   const id = props.data.id;
   let archiveUrl = props.data.archive || null;
 
+  let {width, height, url} = resizeUrl({
+    url: content.poster,
+    width: content.width,
+    height: content.height
+  })
+
   if (options.rss) {
-    let {width, height, url} = resizeUrl({
-      url: content.poster,
-      width: content.width,
-      height: content.height
-    })
     return <blockquote>
       <p>
         <a href={content.source_url}><img src={url} alt={content.title} width={width} height={height} loading="lazy" /></a>
@@ -68,7 +69,7 @@ export function VimeoKind(props: {data: VimeoData}, options: RenderOptions) {
       return <div class="card">
       {header}
       <video
-        poster={content.poster}
+        poster={url}
         class="card-video"
         data-ratio
         data-width={content.width}
@@ -83,7 +84,7 @@ export function VimeoKind(props: {data: VimeoData}, options: RenderOptions) {
     return <div class="card">
       {header}
       <div
-        data-vimeo-poster={content.poster}
+        data-vimeo-poster={url}
         data-width={content.width}
         data-height={content.height}
         data-vimeo-id={id}

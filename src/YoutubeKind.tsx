@@ -30,12 +30,13 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
   const id = props.data.id;
   let archiveUrl = props.data.archive || null;
 
+  let {width, height, url} = resizeUrl({
+    url: content.poster,
+    width: content.width,
+    height: content.height
+  });
+
   if (options.rss) {
-    let {width, height, url} = resizeUrl({
-      url: content.poster,
-      width: content.width,
-      height: content.height
-    })
     return <blockquote>
       <p>
         <a href={content.source_url}><img src={url} alt={content.title} width={width} height={height} loading="lazy" /></a>
@@ -49,6 +50,7 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
     </blockquote>
   }
 
+
   let banner = content.banner
   if (banner == 'https://c.cdyn.dev/null') {
     banner = null;
@@ -56,6 +58,16 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
 
   let resizedBanner = banner && resizeUrl({url: banner})
   let bannerUrl = resizedBanner && resizedBanner.url;
+
+  if (bannerUrl) {
+    try {
+      let bannerUrlObj = new URL(bannerUrl);
+      bannerUrlObj.searchParams.set('width', '645');
+      bannerUrl = bannerUrlObj.toString();
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
   let header = <div class="card-header-bg" data-background={bannerUrl}>
     <a href={content.channel_url} class="card-header-link card-channel-link" target='_top'>
@@ -83,7 +95,7 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
       return <div class="card">
       {header}
       <video
-        poster={content.poster}
+        poster={url}
         class="card-video"
         data-ratio
         data-width={content.width}
@@ -98,7 +110,7 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
     return <div class="card">
       {header}
       <div
-        data-youtube-poster={content.poster}
+        data-youtube-poster={url}
         data-width={content.width}
         data-height={content.height}
         data-youtube-id={id}

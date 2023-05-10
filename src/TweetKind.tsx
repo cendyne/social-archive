@@ -153,6 +153,17 @@ export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
   if (header == 'https://c.cdyn.dev/null') {
     header = undefined;
   }
+
+  if (header) {
+    try {
+      let headerUrl = new URL(header);
+      headerUrl.searchParams.set('width', '645');
+      header = headerUrl.toString();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   if (!content.photos) {
     content.photos = [];
   }
@@ -206,13 +217,19 @@ export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
     </div>)}
     {content.photos.length > 0 ? (<div class="card-media">
     {content.photos.map((photo) => {
-      return <img loading="lazy" data-blurhash={photo.blurhash} data-height={photo.height} data-width={photo.width} src={photo.url} alt='tweet photo' class="simple-image blurhash-actual-image" />
+      let {width, height, url} = resizeUrl(photo);
+      return <img loading="lazy" data-blurhash={photo.blurhash} data-height={height} data-width={width} src={url} alt='tweet photo' class="simple-image blurhash-actual-image" />
     })}
     </div>) : null}
     {content.videos.length > 0 ? (<div class="card-media">
     {content.videos.map((video) => {
+      let {width, height, url} = resizeUrl({
+        width: video.width,
+        height: video.height,
+        url: video.poster
+      });
       return <video
-      poster={video.poster}
+      poster={url}
       class="card-video"
       data-ratio
       data-width={video.width}

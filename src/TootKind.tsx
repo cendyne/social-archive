@@ -562,6 +562,16 @@ export function TootKind(props: {data: TootData}, options: RenderOptions) {
     header = null;
   }
 
+  if (header) {
+    try {
+      let headerUrl = new URL(header);
+      headerUrl.searchParams.set('width', '645');
+      header = headerUrl.toString();
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   let emojis : EmojiMap = {};
   for (let emoji of content.emojis) {
     emojis[emoji.shortcode] = emoji;
@@ -649,10 +659,20 @@ export function TootKind(props: {data: TootData}, options: RenderOptions) {
     {media.length > 0 ? (<div class="card-media">
       {media.map((m) => {
         if (m.type == 'image') {
-          return <img loading="lazy" data-blurhash={m.blurhash} data-height={m.meta.original.height} data-width={m.meta.original.width} src={m.url} alt={m.description} class="simple-image blurhash-actual-image" />
+          let {width, height, url} = resizeUrl({
+            width: m.meta.original.width,
+            height: m.meta.original.height,
+            url: m.url
+          });
+          return <img loading="lazy" data-blurhash={m.blurhash} data-height={height} data-width={width} src={url} alt={m.description} class="simple-image blurhash-actual-image" />
         } else if (m.type == 'video') {
+          let {width, height, url} = resizeUrl({
+            width: m.meta.original.width,
+            height: m.meta.original.height,
+            url: m.preview_url
+          });
           return <video
-            poster={m.preview_url}
+            poster={url}
             class="card-video"
             data-ratio
             data-width={m.meta.original.width}
