@@ -3,6 +3,8 @@
 import { jsx, JSXNode, Fragment } from 'hono/jsx'
 import { RenderOptions } from './RenderOptions'
 import { resizeUrl } from './utils'
+import { HtmlEscapedString } from 'hono/utils/html'
+import { HtmlEscaped } from 'hono/utils/html'
 
 interface TootEmoji {
   shortcode: string,
@@ -193,16 +195,11 @@ function isSelfClosing(name: string) : boolean {
   return SELF_CLOSING[name] || false;
 }
 
-const HtmlEntityNode = class extends JSXNode {
-  private entity: string;
-  constructor(entity: string) {
-    super('', {}, []);
-    this.entity = entity;
-  }
-  toStringToBuffer(buffer: [string]) {
-    buffer[0] += `&${this.entity};`
-  }
-};
+const HtmlEntityNode = function(entity: string) : HtmlEscapedString {
+  let str = new String(`&${entity};`) as string & HtmlEscaped;
+  str.isEscaped = true;
+  return str;
+}
 
 type HtmlMode = 'text' | 'tag-open' | 'tag-close' | 'tag-self-close' | 'attribute-name' |  'attribute-value' | 'attribute-value-quoted' | 'entity';
 function parseHtml(text: string) : Child {
@@ -229,6 +226,7 @@ function parseHtml(text: string) : Child {
         top = '';
         continue;
       } else if (char == '&') {
+        console.log('starting entity');
         mode = 'entity';
         stack[stack.length - 1].children.push(top)
         top = '';
@@ -237,17 +235,22 @@ function parseHtml(text: string) : Child {
       top += char;
     } else if (mode == 'entity') {
       if (char == ';') {
-        stack[stack.length - 1].children.push(new HtmlEntityNode(top));
+        console.log(`ending entity ${top}`)
+        stack[stack.length - 1].children.push(HtmlEntityNode(top));
         mode = 'text';
         top = '';
         continue;
       } else if (char == ' ' || char == '<' || char == '>') {
+        console.log('canceling entity');
         // bail out.
         mode = 'text';
         stack[stack.length - 1].children.push(`&${top}`)
         top = '';
+      } else {
+        console.log(`Entity is &${top}${char}`)
       }
       top += char;
+
     } else if (mode == 'tag-open') {
       if (char == '>') {
         //console.log(`196: Closing open ${top}`);
