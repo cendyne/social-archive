@@ -69,22 +69,25 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
     }
   }
 
-  let header = <div class="card-header-bg" data-background={bannerUrl}>
-    <a href={content.channel_url} class="card-header-link card-channel-link" target='_top'>
-      <div class="card-header">
-        <div class="card-icon">
-          <img loading="lazy" class="card-icon-image" src={content.icon + '?height=64'} alt="" />
+  let header = <div class="card-header-wrapper" data-has-background={bannerUrl != null}>
+    <div class="card-header-bg2" data-background={bannerUrl}></div>
+    <div class="card-header-fg">
+      <a href={content.channel_url} class="card-header-link card-channel-link  card-header-fg-glassy" target='_top'>
+        <div class="card-header">
+          <div class="card-icon">
+            <img loading="lazy" class="card-icon-image" src={content.icon + '?height=64'} alt="" />
+          </div>
         </div>
-      </div>
-      <div class="card-header-content">
-        <div class="card-header-name">{content.name}</div>
-      </div>
-    </a>
-    <a href={content.source_url} class="inline-flex card-header-link flex-shrink" target='_top'>
-      <div class="card-header-content flex-shrink all-rounded">
-        <div class="card-header-name">{content.title}</div>
-      </div>
-    </a>
+        <div class="card-header-content">
+          <div class="card-header-name">{content.name}</div>
+        </div>
+      </a>
+      <a href={content.source_url} class="inline-flex card-header-link flex-shrink card-header-fg-glassy" target='_top'>
+        <div class="card-header-content flex-shrink all-rounded">
+          <div class="card-header-name">{content.title}</div>
+        </div>
+      </a>
+    </div>
   </div>;
   let footer = <div class="card-footer">
     <a href={content.source_url} target='_top'>{date.toLocaleString()}</a>

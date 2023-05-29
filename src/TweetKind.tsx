@@ -196,21 +196,24 @@ export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
   }
 
   return <div class="card">
-    <div class="card-header-bg" data-background={header} data-background-color={color}>
-      <a href={accountUrl} class="fediverse-link inline-flex" target='_top'>
-        <div class="card-header">
-          <div class="card-icon">
-            <img loading="lazy" class="card-icon-image" src={avatar && avatar + '?width=64'} alt="" />
+    <div class="card-header-wrapper" data-has-background={(header != null || color) && true}>
+      {header && (<div class="card-header-bg2" data-background={header} data-background-color={color}></div>)}
+      <div class="card-header-fg">
+        <a href={accountUrl} class="fediverse-link inline-flex" target='_top'>
+          <div class="card-header">
+            <div class="card-icon">
+              <img loading="lazy" class="card-icon-image" src={avatar && avatar + '?width=64'} alt="" />
+            </div>
           </div>
-        </div>
-        <div class="card-header-content">
-          <div class="card-header-name">{displayName}</div>
-          <div class="card-header-description">
-            <span class="fediverse-username">@{username}</span>
-            <span class="fediverse-instance">@twitter.com</span>
+          <div class="card-header-content card-header-fg-glassy">
+            <div class="card-header-name">{displayName}</div>
+            <div class="card-header-description">
+              <span class="fediverse-username">@{username}</span>
+              <span class="fediverse-instance">@twitter.com</span>
+            </div>
           </div>
-        </div>
-      </a>
+        </a>
+      </div>
     </div>
     {htmlContent && (<div class="card-content">
       {htmlContent}
