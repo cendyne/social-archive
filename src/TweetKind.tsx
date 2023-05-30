@@ -2,7 +2,7 @@
 /** @jsxFrag  Fragment */
 import { Fragment, jsx, JSXNode } from 'hono/jsx'
 import { RenderOptions } from './RenderOptions'
-import { resizeUrl } from './utils'
+import { resizeUrl, toText } from './utils'
 interface TweetContent {
   name: string,
   username: string,
@@ -171,6 +171,29 @@ export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
     content.videos = [];
   }
   let archiveUrl = props.data.archive || null;
+
+  if (options.txt) {
+    const title = `${displayName} (@${username}@twitter.com)`;
+    let leftPad = '';
+    let rightPad = '';
+    if (title.length < 73) {
+      const leftPadLength = Math.floor((71 - title.length) / 2)
+      const rightPadLength = Math.ceil((71 - title.length) / 2)
+      leftPad = ':'.repeat(leftPadLength) + ' ';
+      rightPad = ' ' + ':'.repeat(rightPadLength);
+    }
+    let body = [`${leftPad}${title}${rightPad}`];
+
+    toText(htmlContent, body);
+
+    let dateLine = `${postedDate}: ${statusUrl}`
+    body.push(`:${' '.repeat(71)}:`);
+    body.push(`: ${dateLine}${' '.repeat(Math.max(0, 70 - dateLine.length))}:`);
+
+
+    body.push(':'.repeat(73))
+    return body.join('\n');
+  }
 
   if (options.rss) {
     return <blockquote>

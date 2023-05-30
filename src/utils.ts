@@ -1,3 +1,4 @@
+import {JSXNode } from 'hono/jsx'
 export function encodeHex(array: ArrayBuffer): string {
   return Array.from(new Uint8Array(array))
     .map(b => b.toString(16).padStart(2, '0'))
@@ -46,5 +47,72 @@ export function resizeUrl(opts: {width?: number, height?: number, url: string}) 
     width,
     height,
     url
+  }
+}
+
+type Child = JSXNode | string | number | Child[]
+
+export function toText(node : Child, body: string[]) {
+  let dirtyLine = '';
+  let visit = function(node : Child | null) {
+    if (node == null) {
+      return;
+    }
+    if (typeof node == 'string') {
+      let word = '';
+      for (let c of node) {
+        if (c == '\n') {
+          dirtyLine += word;
+          body.push(`: ${dirtyLine}${' '.repeat(Math.max(0, 70 - dirtyLine.length))}:`);
+          dirtyLine = ''
+          word = '';
+        } else if (c ==' ') {
+          if (dirtyLine.length == 0) {
+            dirtyLine += word;
+          } else {
+            dirtyLine += ' ' + word;
+          }
+          word = ''
+
+        } else {
+          word += c;
+          if (dirtyLine.length + word.length > 67 && dirtyLine.length > 0) {
+            body.push(`: ${dirtyLine}${' '.repeat(Math.max(0, 70 - dirtyLine.length))}:`);
+            dirtyLine = '';
+          }
+        }
+      }
+      if (word.length > 0) {
+        if (dirtyLine.length == 0) {
+          dirtyLine += word;
+        } else {
+          dirtyLine += ' ' + word;
+        }
+      }
+    } else if (typeof node == 'number') {
+      visit(`${node}`);
+    } else if (node instanceof JSXNode) {
+      if (node.tag == 'a') {
+        if (node.props['target'] == '_blank') {
+          visit(node.props['href']);
+        } else {
+          for (let child of node.children) {
+            visit(child);
+          }
+        }
+      } else {
+        for (let child of node.children) {
+          visit(child);
+        }
+      }
+    } else if (Array.isArray(node)) {
+      for (let item of node) {
+        visit(item);
+      }
+    }
+  }
+  visit(node);
+  if (dirtyLine.length > 0) {
+    body.push(`: ${dirtyLine}${' '.repeat(Math.max(0, 70 - dirtyLine.length))}:`);
   }
 }

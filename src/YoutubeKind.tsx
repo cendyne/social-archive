@@ -2,7 +2,7 @@
 /** @jsxFrag Fragment */
 import { jsx, Fragment } from 'hono/jsx'
 import { RenderOptions } from './RenderOptions';
-import { resizeUrl } from './utils';
+import { resizeUrl, toText } from './utils';
 
 interface YoutubeContent {
   icon: string,
@@ -35,6 +35,27 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
     width: content.width,
     height: content.height
   });
+
+  if (options.txt) {
+    const title = `${content.name}`;
+    let leftPad = '';
+    let rightPad = '';
+    if (title.length < 73) {
+      const leftPadLength = Math.floor((71 - title.length) / 2)
+      const rightPadLength = Math.ceil((71 - title.length) / 2)
+      leftPad = ':'.repeat(leftPadLength) + ' ';
+      rightPad = ' ' + ':'.repeat(rightPadLength);
+    }
+    let body = [`${leftPad}${title}${rightPad}`];
+    toText(content.title, body);
+    let dateLine = `${new Date(content.iso8601)}`
+    body.push(`:${' '.repeat(71)}:`);
+    body.push(`: ${dateLine}${' '.repeat(Math.max(0, 70 - dateLine.length))}:`);
+    const sourceLine = content.source_url;
+    body.push(`: ${sourceLine}${' '.repeat(Math.max(0, 70 - sourceLine.length))}:`);
+    body.push(':'.repeat(73))
+    return body.join('\n');
+  }
 
   if (options.rss) {
     return <blockquote>

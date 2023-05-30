@@ -2,7 +2,7 @@
 /** @jsxFrag  Fragment */
 import { jsx, JSXNode, Fragment } from 'hono/jsx'
 import { RenderOptions } from './RenderOptions'
-import { resizeUrl } from './utils'
+import { resizeUrl, toText } from './utils'
 import { HtmlEscapedString } from 'hono/utils/html'
 import { HtmlEscaped } from 'hono/utils/html'
 
@@ -226,7 +226,7 @@ function parseHtml(text: string) : Child {
         top = '';
         continue;
       } else if (char == '&') {
-        console.log('starting entity');
+        // console.log('starting entity');
         mode = 'entity';
         stack[stack.length - 1].children.push(top)
         top = '';
@@ -235,19 +235,19 @@ function parseHtml(text: string) : Child {
       top += char;
     } else if (mode == 'entity') {
       if (char == ';') {
-        console.log(`ending entity ${top}`)
+        // console.log(`ending entity ${top}`)
         stack[stack.length - 1].children.push(HtmlEntityNode(top));
         mode = 'text';
         top = '';
         continue;
       } else if (char == ' ' || char == '<' || char == '>') {
-        console.log('canceling entity');
+        // console.log('canceling entity');
         // bail out.
         mode = 'text';
         stack[stack.length - 1].children.push(`&${top}`)
         top = '';
       } else {
-        console.log(`Entity is &${top}${char}`)
+        // console.log(`Entity is &${top}${char}`)
       }
       top += char;
 
@@ -604,6 +604,29 @@ export function TootKind(props: {data: TootData}, options: RenderOptions) {
     }
   }
   let archiveUrl = props.data.archive || null;
+
+  if (options.txt) {
+    const title = `${displayNameText} (@${username}@${hostname})`;
+    let leftPad = '';
+    let rightPad = '';
+    if (title.length < 73) {
+      const leftPadLength = Math.floor((71 - title.length) / 2)
+      const rightPadLength = Math.ceil((71 - title.length) / 2)
+      leftPad = ':'.repeat(leftPadLength) + ' ';
+      rightPad = ' ' + ':'.repeat(rightPadLength);
+    }
+    let body = [`${leftPad}${title}${rightPad}`];
+
+    toText(parsedHtml, body);
+
+    let dateLine = `${postedDate}: ${statusUrl}`
+    body.push(`:${' '.repeat(71)}:`);
+    body.push(`: ${dateLine}${' '.repeat(Math.max(0, 70 - dateLine.length))}:`);
+
+
+    body.push(':'.repeat(73))
+    return body.join('\n');
+  }
 
   if (options.rss) {
     return <blockquote>

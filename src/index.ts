@@ -361,6 +361,7 @@ app.get('/list/:kind', async (c) => {
 		let options: RenderOptions = {
 			showLinks: true,
 			rss: false,
+			txt: false,
 		}
 		return c.html(ListPage(kind, result.results.map(result => mapKindToHtml(kind, result, options)), result.next, result.prev, result.last));
 	}
@@ -377,11 +378,13 @@ app.get('/get/:kind/:id', async (c) => {
 	const iframe = c.req.query('iframe');
 	const raw = c.req.query('raw');
 	const rss = c.req.query('rss');
+	const txt = c.req.query('txt');
 	if (result) {
 		const json = JSON.parse(result.content);
 		let options : RenderOptions = {
 			showLinks: true,
-			rss: rss !== undefined
+			rss: rss !== undefined,
+			txt: txt !== undefined,
 		};
 		if (iframe !== undefined || raw !== undefined) {
 			options.showLinks = false;
@@ -391,8 +394,11 @@ app.get('/get/:kind/:id', async (c) => {
 			content: json,
 			archive: result.archive_url || null
 		}, options);
-		if (raw !== undefined || rss !== undefined) {
+		if (raw !== undefined ) {
 			return c.html(html);
+		}
+		if (txt !== undefined) {
+			return c.text(html);
 		}
 		if (iframe !== undefined) {
 			return c.html(IframePage(`${kind} - ${id}`, html));
@@ -439,6 +445,7 @@ app.post('/batch-read', async (c) => {
 					archive: result.archive_url || null
 				}, {
 					rss: false,
+					txt: false,
 					showLinks: false
 				})}`;
 				const rss = html`${mapKindToHtml(kind, {
@@ -447,9 +454,19 @@ app.post('/batch-read', async (c) => {
 					archive: result.archive_url || null
 				}, {
 					rss: true,
+					txt: false,
 					showLinks: false
 				})}`;
-				value = {inline, rss}
+				const txt = mapKindToHtml(kind, {
+					id: result.kind_id,
+					content: json,
+					archive: result.archive_url || null
+				}, {
+					rss: false,
+					txt: true,
+					showLinks: false
+				})
+				value = {inline, rss, txt}
 			}
 			results.push({
 				key: [kind, id],
