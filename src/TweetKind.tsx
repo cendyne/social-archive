@@ -179,8 +179,8 @@ export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
     if (title.length < 73) {
       const leftPadLength = Math.floor((71 - title.length) / 2)
       const rightPadLength = Math.ceil((71 - title.length) / 2)
-      leftPad = ':'.repeat(leftPadLength) + ' ';
-      rightPad = ' ' + ':'.repeat(rightPadLength);
+      leftPad = ':'.repeat(Math.max(0, leftPadLength)) + ' ';
+      rightPad = ' ' + ':'.repeat(Math.max(0, rightPadLength));
     }
     let body = [`${leftPad}${title}${rightPad}`];
 
