@@ -2,9 +2,10 @@
 /** @jsxFrag  Fragment */
 import { jsx, JSXNode, Fragment } from 'hono/jsx'
 import { RenderOptions } from './RenderOptions'
-import { resizeUrl, toText } from './utils'
+import { resizeUrl, toIR, toText } from './utils'
 import { HtmlEscapedString } from 'hono/utils/html'
 import { HtmlEscaped } from 'hono/utils/html'
+import { CardContent, CardMedia, CardNode, ImageNode, VideoNode } from 'document-ir'
 
 interface TootEmoji {
   shortcode: string,
@@ -123,7 +124,7 @@ function parseEmojis(emojis: EmojiMap, text: string) : Child[] {
         mode = 'text';
         let emoji = emojis[top];
         if (emoji) {
-          output.push(<img src={`${emoji.url}?width=16`} draggable="false" class="custom-emoji" alt={top}/>);
+          output.push(<img src={`${emoji.url}?height=16`} draggable="false" class="custom-emoji" alt={top} data-emoji-src={emoji.url} data-emoji={true} />);
         } else {
           output.push(`:${top}:`)
         }
@@ -183,6 +184,7 @@ const SAFE_TAGS: {[k: string]: boolean} = {
   'table': true,
   'td': true,
   'tr': true,
+  'th': true,
   'ul': true,
   'a': true,
 }
@@ -498,7 +500,7 @@ function sanitizeAndAddEmojis(emojis: EmojiMap, node: Child, depth: number) : Ch
     }
 
     if (tag == 'a') {
-      props['rel'] = 'ugc noreferer nofollow noopener'
+      props['rel'] = 'ugc noreferrer nofollow noopener'
       props['target'] = '_top';
     }
 
@@ -549,7 +551,7 @@ interface TootData {
   archive: string | null
 }
 
-export function TootKind(props: {data: TootData}, options: RenderOptions) {
+export async function TootKind(props: {data: TootData}, options: RenderOptions) {
   let content = props.data.content;
   let date = new Date(content.created_at);
   let accountUrl = content.account.url;
@@ -563,16 +565,6 @@ export function TootKind(props: {data: TootData}, options: RenderOptions) {
 
   if (header == 'https://c.cdyn.dev/null') {
     header = null;
-  }
-
-  if (header) {
-    try {
-      let headerUrl = new URL(header);
-      headerUrl.searchParams.set('width', '645');
-      header = headerUrl.toString();
-    } catch (e) {
-      console.error(e);
-    }
   }
 
   let emojis : EmojiMap = {};
@@ -604,6 +596,68 @@ export function TootKind(props: {data: TootData}, options: RenderOptions) {
     }
   }
   let archiveUrl = props.data.archive || null;
+
+  if (options.ir) {
+    const result : CardNode = {
+      type: 'card',
+      header: {
+        type: 'card-header',
+        title: await toIR(displayName),
+        username,
+        usernameDomain: hostname,
+        url: accountUrl,
+        backgroundImage: header || undefined,
+        backgroundBlurhash: content.account.header_blurhash,
+        imageUrl: content.account.avatar,
+        imageBlurhash: content.account.avatar_blurhash
+      },
+      attribution: {
+        type: 'card-attribution',
+        archiveUrl: archiveUrl || undefined,
+        date: content.created_at,
+        url: statusUrl
+      },
+    };
+    const cardContent : CardContent = {
+      type: 'card-content',
+      content: await toIR(htmlContent)
+    };
+    if (cardContent.content.length > 0) {
+      result.content = cardContent;
+    }
+    if (content.media_attachments && content.media_attachments.length > 0) {
+      const mediaContent : (ImageNode | VideoNode)[] = [];
+      for (let media of content.media_attachments) {
+        if (media.type == 'image') {
+          mediaContent.push({
+            type: 'image',
+            alt: media.description,
+            url: media.url,
+            blurhash: media.blurhash,
+            width: media.meta.original.width,
+            height: media.meta.original.height
+          })
+        } else if (media.type == 'video') {
+          mediaContent.push({
+            type: 'video',
+            alt: media.description,
+            mp4: media.url,
+            poster: media.preview_url,
+            blurhash: media.blurhash,
+            width: media.meta.original.width,
+            height: media.meta.original.height,
+          });
+        }
+      }
+      const media : CardMedia = {
+        type: 'card-media',
+        content: mediaContent
+      };
+      result.media = media;
+    }
+
+    return result;
+  }
 
   if (options.txt) {
     const title = `${displayNameText} (@${username}@${hostname})`;
@@ -660,6 +714,16 @@ export function TootKind(props: {data: TootData}, options: RenderOptions) {
       <a href={statusUrl}>{postedDate}</a>
       {archiveUrl && [' ', <a href={archiveUrl}>(archived)</a>]}
     </blockquote>
+  }
+
+  if (header) {
+    try {
+      let headerUrl = new URL(header);
+      headerUrl.searchParams.set('width', '645');
+      header = headerUrl.toString();
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   return <div class="card">

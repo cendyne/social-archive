@@ -1,3 +1,4 @@
+import { ArrayCollapseTransformer, DocumentNode, ListItem, ListNode, Node, TableCellNode, TextCollapseTransformer, WhitespaceStretchingTransformer, WhitespaceTransformer } from 'document-ir';
 import {JSXNode } from 'hono/jsx'
 export function encodeHex(array: ArrayBuffer): string {
   return Array.from(new Uint8Array(array))
@@ -115,4 +116,267 @@ export function toText(node : Child, body: string[]) {
   if (dirtyLine.length > 0) {
     body.push(`: ${dirtyLine}${' '.repeat(Math.max(0, 70 - dirtyLine.length))}:`);
   }
+}
+
+function visitIRList(nodes: Child[]) : Node[] {
+  if (!nodes) {
+    return [];
+  }
+  let content: Node[] = []
+  for (let elem of nodes) {
+    let result = visitIR(elem);
+    if (result) {
+      content.push(result);
+    }
+  }
+  return content
+}
+function visitIR(node: Child) : Node | null {
+  if (node == null || node == undefined) {
+    return null;
+  }
+  if (typeof node == 'string') {
+    return {
+      type: 'text',
+      text: node
+    }
+  } else if (typeof node == 'number') {
+    return {
+      type: 'text',
+      text: `${node}`
+    }
+  } else if (Array.isArray(node)) {
+    let results : Node[] = []
+    for (let elem of node) {
+      let result = visitIR(elem);
+      if (result) {
+        results.push(result);
+      }
+    }
+    return {
+      type: 'array',
+      content: results
+    }
+  } else if (node instanceof JSXNode) {
+    if (node.tag == 'b' || node.tag == 'strong') {
+      return {
+        type: 'bold',
+        content: visitIRList(node.children)
+      }
+    } else if (node.tag == 'i' || node.tag == 'em') {
+      return {
+        type: 'italic',
+        content: visitIRList(node.children)
+      }
+    } else if (node.tag == 'p') {
+      return {
+        type: 'paragraph',
+        content: visitIRList(node.children)
+      }
+    } else if (node.tag == 'br') {
+      return {
+        type: 'break'
+      }
+    } else if (node.tag == 'hr') {
+      return {
+        type: 'break'
+      }
+    } else if (node.tag == 'span') {
+      return {
+        type: 'array',
+        content: visitIRList(node.children)
+      }
+    } else if (node.tag == 'code') {
+      return {
+        type: 'code',
+        content: visitIRList(node.children)
+      }
+    } else if (node.tag == 'blockquote') {
+      return {
+        type: 'block-quote',
+        content: visitIRList(node.children)
+      }
+    } else if (node.tag == 'div') {
+      return {
+        type: 'block',
+        content: visitIRList(node.children)
+      }
+    } else if (node.tag == 'img') {
+      let isEmoji = false;
+      if (node.props['data-emoji']) {
+        isEmoji = true;
+      }
+      let alt = '';
+      if (typeof node.props['alt'] == 'string') {
+        alt = node.props['alt'];
+      }
+      let url = '';
+      if (typeof node.props['src'] == 'string') {
+        url = node.props['src'];
+      }
+      if (isEmoji) {
+        if (typeof node.props['data-emoji-src'] == 'string') {
+          url = node.props['data-emoji-src'];
+        }
+        return {
+          type: 'emoji',
+          alt,
+          url
+        }
+      }
+      let width : number | undefined;
+      let height: number | undefined;
+      let blurhash : string | undefined;
+      if (typeof node.props['width'] == 'string' && node.props['width'].match(/^\d+(?:\.\d+)?$/)) {
+        width = Number.parseFloat(node.props['width']);
+      } else if (typeof node.props['width'] == 'number') {
+        width = node.props['width'];
+      }
+      if (typeof node.props['height'] == 'string' && node.props['height'].match(/^\d+(?:\.\d+)?$/)) {
+        height = Number.parseFloat(node.props['height']);
+      } else if (typeof node.props['height'] == 'number') {
+        height = node.props['height'];
+      }
+      if (typeof node.props['data-blurhash'] == 'string') {
+        blurhash = node.props['data-blurhash'];
+      }
+
+      return {
+        type: 'image',
+        alt,
+        url,
+        blurhash,
+        width,
+        height
+      }
+    } else if (node.tag == 'a') {
+      let url = '#';
+      if (typeof node.props['href'] == 'string') {
+        url = node.props['href'];
+      }
+      let userGeneratedContent : true | undefined;
+      let noReferrer : true | undefined;
+      let noFollow : true | undefined;
+      let noOpener : true | undefined;
+      let target : '_blank' | '_self' | '_top' | undefined;
+      let title : string | undefined;
+      if (typeof node.props['title'] == 'string') {
+        title = node.props['title'];
+      }
+      if (typeof node.props['target'] == 'string') {
+        if (node.props['target'] == '_blank'
+          || node.props['target'] == '_self'
+          || node.props['target'] == '_top') {
+          target = node.props['target'];
+        }
+      }
+      if (typeof node.props['rel'] == 'string') {
+        const relTokens = node.props['rel'].split(' ');
+        for (let token of relTokens) {
+          if (token == 'ugc') {
+            userGeneratedContent = true;
+          } else if (token == 'noreferrer' || token == 'noreferer') {
+            noReferrer = true;
+          } else if (token == 'nofollow') {
+            noFollow = true;
+          } else if (token == 'noopener') {
+            noOpener = true;
+          }
+        }
+      }
+      return {
+        type: 'link',
+        content: visitIRList(node.children),
+        url,
+        userGeneratedContent,
+        noReferrer,
+        noFollow,
+        noOpener,
+        target
+      }
+    } else if (node.tag == 'ul' || node.tag == 'ol') {
+      let content: ListItem[] = []
+      for (let child of node.children) {
+        if (child instanceof JSXNode && child.tag == 'li') {
+          content.push({
+            type: 'list-item',
+            content: visitIRList(child.children)
+          })
+        }
+      }
+      return {
+        type: 'list',
+        style: node.tag == 'ul' ? 'unordered' : 'ordered',
+        content
+      };
+    } else if (node.tag == 'table') {
+      let rows : TableCellNode[][] = []
+      for (let child of node.children) {
+        if (child instanceof JSXNode && child.tag == 'tr') {
+          let row : TableCellNode[] = [];
+          for (let cell of child.children) {
+            if (cell instanceof JSXNode
+              && (cell.tag == 'td' || cell.tag == 'th')) {
+                let width = 1;
+                let height = 1;
+                const colspan = cell.props['colspan'];
+                const rowspan = cell.props['rowspan'];
+                if (typeof colspan == 'string' && colspan.match(/^\d+$/)) {
+                  width = Number.parseInt(colspan);
+                }
+                if (typeof rowspan == 'string' && rowspan.match(/^\d+$/)) {
+                  height = Number.parseInt(rowspan);
+                }
+                row.push({
+                  type: 'table-cell',
+                  span: [width, height],
+                  content: visitIRList(cell.children),
+                  header: cell.tag == 'th' ? true : undefined
+                });
+            }
+          }
+        }
+      }
+      return {
+        type: 'table',
+        content: rows
+      }
+    } else {
+      // Unknown type
+      return {
+        type: 'array',
+        content: visitIRList(node.children)
+      }
+    }
+  } else {
+    return null;
+  }
+}
+
+export async function toIR(node: Child | null) : Promise<Node[]> {
+  if (node == null) {
+    return [];
+  }
+  const result = visitIR(node);
+  if (!result) {
+    return []
+  }
+  let document : DocumentNode = {
+    type: 'document',
+    author: '',
+    title: '',
+    url: '',
+    content: [result]
+  }
+  // Collapse some general things
+  const transformers = [
+    new ArrayCollapseTransformer(),
+    new TextCollapseTransformer(),
+    new WhitespaceTransformer(),
+    new WhitespaceStretchingTransformer()
+  ];
+  for (let transformer of transformers) {
+    document = await transformer.transform(document);
+  }
+  return document.content;
 }

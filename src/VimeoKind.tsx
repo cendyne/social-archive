@@ -3,10 +3,11 @@
 import { jsx, Fragment } from 'hono/jsx'
 import { RenderOptions } from './RenderOptions';
 import { resizeUrl, toText } from './utils';
+import { CardMedia, CardNode } from 'document-ir';
 
 interface VimeoContent {
   poster: string,
-  url?: string,
+  url: string,
   width: number,
   height: number,
   blurhash: string,
@@ -28,11 +29,39 @@ export function VimeoKind(props: {data: VimeoData}, options: RenderOptions) {
   const id = props.data.id;
   let archiveUrl = props.data.archive || null;
 
-  let {width, height, url} = resizeUrl({
-    url: content.poster,
-    width: content.width,
-    height: content.height
-  })
+  if (options.ir) {
+    const result : CardNode = {
+      type: 'card',
+      header: {
+        type: 'card-header',
+        title: [{type: 'text', text: content.name}],
+        url: content.uploader_url,
+      },
+      attribution: {
+        type: 'card-attribution',
+        archiveUrl: archiveUrl || undefined,
+        date: content.iso8601,
+        url: content.source_url,
+        title: [{type: 'text', text: content.title}]
+      },
+      media: {
+        type: 'card-media',
+        content: [
+          {
+            type: 'video',
+            mp4: content.url,
+            alt: content.title,
+            poster: content.poster,
+            blurhash: content.blurhash,
+            height: content.height,
+            width: content.width
+          }
+        ]
+      }
+    };
+
+    return result;
+  }
 
   if (options.txt) {
     const title = `${content.name}`;
@@ -54,6 +83,12 @@ export function VimeoKind(props: {data: VimeoData}, options: RenderOptions) {
     body.push(':'.repeat(73))
     return body.join('\n');
   }
+
+  let {width, height, url} = resizeUrl({
+    url: content.poster,
+    width: content.width,
+    height: content.height
+  })
 
   if (options.rss) {
     return <blockquote>

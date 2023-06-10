@@ -333,13 +333,13 @@ app.put('/archive/:kind/:id', bearerCheck(), async (c) => {
 })
 
 
-function mapKindToHtml(kind: string, result: {id: string, content: any, archive: string | null}, options: RenderOptions): any {
+async function mapKindToHtml(kind: string, result: {id: string, content: any, archive: string | null}, options: RenderOptions): Promise<any> {
 	if (kind == 'tweet') {
-		return TweetKind({data: result}, options);
+		return await TweetKind({data: result}, options);
 	} else if (kind == 'youtube') {
 		return YoutubeKind({data: result}, options);
 	} else if (kind == 'toot') {
-		return TootKind({data: result}, options);
+		return await TootKind({data: result}, options);
 	} else if (kind == 'vimeo') {
 		return VimeoKind({data: result}, options);
 	} else {
@@ -362,6 +362,7 @@ app.get('/list/:kind', async (c) => {
 			showLinks: true,
 			rss: false,
 			txt: false,
+			ir: false,
 		}
 		return c.html(ListPage(kind, result.results.map(result => mapKindToHtml(kind, result, options)), result.next, result.prev, result.last));
 	}
@@ -379,22 +380,24 @@ app.get('/get/:kind/:id', async (c) => {
 	const raw = c.req.query('raw');
 	const rss = c.req.query('rss');
 	const txt = c.req.query('txt');
+	const ir = c.req.query('ir');
 	if (result) {
 		const json = JSON.parse(result.content);
 		let options : RenderOptions = {
 			showLinks: true,
 			rss: rss !== undefined,
 			txt: txt !== undefined,
+			ir: ir !== undefined,
 		};
 		if (iframe !== undefined || raw !== undefined) {
 			options.showLinks = false;
 		}
-		const html = mapKindToHtml(kind, {
+		const html = await mapKindToHtml(kind, {
 			id: result.kind_id,
 			content: json,
 			archive: result.archive_url || null
 		}, options);
-		if (raw !== undefined ) {
+		if (raw !== undefined) {
 			return c.html(html);
 		}
 		if (txt !== undefined) {
@@ -402,6 +405,9 @@ app.get('/get/:kind/:id', async (c) => {
 		}
 		if (iframe !== undefined) {
 			return c.html(IframePage(`${kind} - ${id}`, html));
+		}
+		if (ir !== undefined) {
+			return c.json(html);
 		}
 		return c.html(SinglePage(kind, [html]));
 	} else {
@@ -413,6 +419,21 @@ type ReadTypeId = [kind: string, id: string];
 type BatchReadRequest = ReadTypeId[];
 
 app.post('/batch-read', async (c) => {
+	let showRss = true;
+	let showTxt = true;
+	let showHtml = true;
+	let showIr = true;
+	const queryRss = c.req.query('rss');
+	const queryTxt = c.req.query('txt');
+	const queryHtml = c.req.query('html');
+	const queryIr = c.req.query('ir');
+	if (queryRss || queryTxt || queryHtml || queryIr) {
+		showRss = (queryRss != undefined);
+		showTxt = (queryTxt != undefined);
+		showHtml = (queryHtml != undefined);
+		showIr = (queryIr != undefined);
+	}
+
 	const errMsg = 'Body must be a json array of kinds and ids, as such: [["tweet", "2222"]]';
 	let body : BatchReadRequest;
 	try {
@@ -439,34 +460,59 @@ app.post('/batch-read', async (c) => {
 			let value = null;
 			if (result) {
 				const json = JSON.parse(result.content);
-				const inline = html`${mapKindToHtml(kind, {
-					id: result.kind_id,
-					content: json,
-					archive: result.archive_url || null
-				}, {
-					rss: false,
-					txt: false,
-					showLinks: false
-				})}`;
-				const rss = html`${mapKindToHtml(kind, {
-					id: result.kind_id,
-					content: json,
-					archive: result.archive_url || null
-				}, {
-					rss: true,
-					txt: false,
-					showLinks: false
-				})}`;
-				const txt = mapKindToHtml(kind, {
-					id: result.kind_id,
-					content: json,
-					archive: result.archive_url || null
-				}, {
-					rss: false,
-					txt: true,
-					showLinks: false
-				})
-				value = {inline, rss, txt}
+				value = {} as any;
+				if (showHtml) {
+					const inline = html`${await mapKindToHtml(kind, {
+						id: result.kind_id,
+						content: json,
+						archive: result.archive_url || null
+					}, {
+						rss: false,
+						txt: false,
+						showLinks: false,
+						ir: false
+					})}`;
+					value.inline = inline;
+				}
+				if (showRss) {
+					const rss = html`${await mapKindToHtml(kind, {
+						id: result.kind_id,
+						content: json,
+						archive: result.archive_url || null
+					}, {
+						rss: true,
+						txt: false,
+						showLinks: false,
+						ir: false
+					})}`;
+					value.rss = rss;
+				}
+				if (showTxt) {
+					const txt = await mapKindToHtml(kind, {
+						id: result.kind_id,
+						content: json,
+						archive: result.archive_url || null
+					}, {
+						rss: false,
+						txt: true,
+						showLinks: false,
+						ir: false
+					});
+					value.txt = txt;
+				}
+				if (showIr) {
+					const ir = await mapKindToHtml(kind, {
+						id: result.kind_id,
+						content: json,
+						archive: result.archive_url || null
+					}, {
+						rss: false,
+						txt: false,
+						showLinks: false,
+						ir: true
+					})
+					value.ir = ir;
+				}
 			}
 			results.push({
 				key: [kind, id],

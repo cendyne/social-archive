@@ -9,6 +9,9 @@ export function UnknownKind(props: {data: {id: string, content: any}}, options: 
       UNSUPPORTED EMBED TYPE
     </blockquote>
   }
+  if (options.ir) {
+    return 'Unsupported';
+  }
   return <pre>
     <code>
       {JSON.stringify(props.data.content)}

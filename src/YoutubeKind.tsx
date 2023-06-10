@@ -3,6 +3,7 @@
 import { jsx, Fragment } from 'hono/jsx'
 import { RenderOptions } from './RenderOptions';
 import { resizeUrl, toText } from './utils';
+import { CardNode } from 'document-ir';
 
 interface YoutubeContent {
   icon: string,
@@ -17,6 +18,7 @@ interface YoutubeContent {
   channel_url: string,
   source_url: string,
   iso8601: string,
+  id: string,
 }
 interface YoutubeData {
   id: string,
@@ -29,6 +31,60 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
   let date = new Date(content.iso8601);
   const id = props.data.id;
   let archiveUrl = props.data.archive || null;
+
+  if (options.ir) {
+    const result : CardNode = {
+      type: 'card',
+      header: {
+        type: 'card-header',
+        title: [{type: 'text', text: content.name}],
+        url: content.channel_url,
+        imageUrl: content.icon,
+        imageBlurhash: content.icon
+      },
+      attribution: {
+        type: 'card-attribution',
+        archiveUrl: archiveUrl || undefined,
+        date: content.iso8601,
+        url: content.source_url,
+        title: [{type: 'text', text: content.title}]
+      }
+    };
+
+    if (content.url) {
+      result.media = {
+        type: 'card-media',
+        content : [{
+          type: 'video',
+          mp4: content.url || 'todo',
+          alt: content.title,
+          poster: content.poster,
+          blurhash: content.blurhash,
+          height: content.height,
+          width: content.width,
+        }]
+      }
+    } else {
+      result.content = {
+        type: 'card-content',
+        content: [{
+          type: 'embed',
+          content: {
+            type: 'youtube',
+            id: content.id || props.data.id,
+            imagePreview: {
+              url: content.poster,
+              width: content.width,
+              height: content.height,
+              blurhash: content.blurhash
+            }
+          }
+        }]
+      }
+    }
+
+    return result;
+  }
 
   let {width, height, url} = resizeUrl({
     url: content.poster,

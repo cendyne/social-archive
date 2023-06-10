@@ -2,28 +2,31 @@
 /** @jsxFrag  Fragment */
 import { Fragment, jsx, JSXNode } from 'hono/jsx'
 import { RenderOptions } from './RenderOptions'
-import { resizeUrl, toText } from './utils'
+import { resizeUrl, toIR, toText } from './utils'
+import { CardContent, CardMedia, CardNode, ImageNode, VideoNode } from 'document-ir'
 interface TweetContent {
-  name: string,
-  username: string,
-  timestamp: number,
-  text: string,
+  name: string
+  username: string
+  timestamp: number
+  text: string
+  iso8601: string
   photos: {
-    url: string,
-    width: number,
-    height: number,
+    url: string
+    width: number
+    height: number
     blurhash: string
   }[],
   videos: {
-    poster: string,
-    url: string,
-    width: number,
-    height: number,
+    poster: string
+    url: string
+    width: number
+    height: number
     blurhash: string
   }[],
-  icon: string,
-  banner?: string,
-  url?: string,
+  icon: string
+  banner?: string
+  banner_blurhash?: string
+  url?: string
   color?: string
 }
 interface TweetData {
@@ -115,7 +118,7 @@ function parseTweet(content: string) : Child {
     } else if (mode == 'link') {
       if (char.match(/[ \n;\)\()]/)) {
         if (top.includes('.')) {
-          result.push(<a href={`http${secure ? 's' : ''}://${top}`} target='_top' rel='ugc noreferer nofollow noopener'>{top}</a>);
+          result.push(<a href={`http${secure ? 's' : ''}://${top}`} target='_top' rel='ugc noreferrer nofollow noopener'>{top}</a>);
           top = char;
           mode = 'text';
           continue;
@@ -127,18 +130,18 @@ function parseTweet(content: string) : Child {
   if (mode == 'text') {
     result.push(top);
   } else if (mode == 'username') {
-    result.push(<a href={`https://twitter.com/${top}`} target='_top' rel='ugc noreferer nofollow noopener'>@{top}</a>);
+    result.push(<a href={`https://twitter.com/${top}`} target='_top' rel='ugc noreferrer nofollow noopener'>@{top}</a>);
   } else if (mode == 'hashtag') {
-    result.push(<a href={`https://twitter.com/hashtag/${top}`} target='_top' rel='ugc noreferer nofollow noopener'>#{top}</a>);
+    result.push(<a href={`https://twitter.com/hashtag/${top}`} target='_top' rel='ugc noreferrer nofollow noopener'>#{top}</a>);
   } else if (mode == 'link') {
-    result.push(<a href={`http${secure ? 's' : ''}://${top}`} target='_top' rel='ugc noreferer nofollow noopener'>{top}</a>);
+    result.push(<a href={`http${secure ? 's' : ''}://${top}`} target='_top' rel='ugc noreferrer nofollow noopener'>{top}</a>);
   }
   return result;
 }
 
 
 
-export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
+export async function TweetKind(props: {data: TweetData}, options: RenderOptions) {
   let content = props.data.content;
   let date = new Date(content.timestamp * 1000);
   let accountUrl = `https://twitter.com/${content.username}`;
@@ -150,27 +153,86 @@ export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
   let htmlContent = parseTweet(content.text);
   let statusUrl = `https://twitter.com/${content.username}/status/${props.data.id}`;
   let postedDate = date.toLocaleString();
+
   if (header == 'https://c.cdyn.dev/null') {
     header = undefined;
-  }
-
-  if (header) {
-    try {
-      let headerUrl = new URL(header);
-      headerUrl.searchParams.set('width', '645');
-      header = headerUrl.toString();
-    } catch (e) {
-      console.error(e);
-    }
   }
 
   if (!content.photos) {
     content.photos = [];
   }
+
   if (!content.videos) {
     content.videos = [];
   }
   let archiveUrl = props.data.archive || null;
+
+  if (options.ir) {
+    const result : CardNode = {
+      type: 'card',
+      header: {
+        type: 'card-header',
+        title: [{type: 'text', text: displayName}],
+        username,
+        usernameDomain: 'twitter.com',
+        url: accountUrl,
+        backgroundImage: header,
+        backgroundColor: color,
+        backgroundBlurhash: content.banner_blurhash,
+        imageUrl: avatar
+        // TODO imageBlurhash
+      },
+      attribution: {
+        type: 'card-attribution',
+        archiveUrl: props.data.archive || undefined,
+        date: content.iso8601,
+        url: statusUrl
+      }
+    };
+    const cardContent : CardContent = {
+      type: 'card-content',
+      content: await toIR(htmlContent)
+    };
+    if (cardContent.content.length > 0) {
+      result.content = cardContent;
+    }
+    if ((content.photos && content.photos.length > 0)
+      || (content.videos && content.videos.length > 0)) {
+        const mediaContent : (ImageNode | VideoNode)[] = [];
+        if (content.photos) {
+          for (let photo of content.photos) {
+            mediaContent.push({
+              type: 'image',
+              alt: 'Photo included with tweet',
+              url: photo.url,
+              blurhash: photo.blurhash,
+              width: photo.width,
+              height: photo.height
+            })
+          }
+        }
+        if (content.videos) {
+          for (let video of content.videos) {
+            mediaContent.push({
+              type: 'video',
+              alt: 'Video included with tweet',
+              mp4: video.url,
+              poster: video.poster,
+              blurhash: video.blurhash,
+              width: video.width,
+              height: video.height
+            })
+          }
+      }
+      const media : CardMedia = {
+        type: 'card-media',
+        content: mediaContent
+      };
+      result.media = media;
+    }
+
+    return result;
+  }
 
   if (options.txt) {
     const title = `${displayName} (@${username}@twitter.com)`;
@@ -216,6 +278,16 @@ export function TweetKind(props: {data: TweetData}, options: RenderOptions) {
       <a href={statusUrl}>{postedDate}</a>
       {archiveUrl && [' ', <a href={archiveUrl}>(archived)</a>]}
     </blockquote>
+  }
+
+  if (header) {
+    try {
+      let headerUrl = new URL(header);
+      headerUrl.searchParams.set('width', '645');
+      header = headerUrl.toString();
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   return <div class="card">
