@@ -65,8 +65,8 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
         }]
       }
     } else {
-      result.content = {
-        type: 'card-content',
+      result.media = {
+        type: 'card-media',
         content: [{
           type: 'embed',
           content: {
