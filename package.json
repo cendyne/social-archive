@@ -12,7 +12,7 @@
     "deploy": "wrangler publish"
   },
   "dependencies": {
-    "document-ir": "github:cendyne/document-ir",
+    "document-ir": "github:cendyne/document-ir#0.0.4",
     "hono": "^2.5.6"
   }
 }

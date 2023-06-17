@@ -9,6 +9,7 @@ interface YoutubeContent {
   icon: string,
   poster: string,
   banner: string | null,
+  banner_blurhash?: string | null,
   url?: string,
   width: number,
   height: number,
@@ -40,7 +41,9 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
         title: [{type: 'text', text: content.name}],
         url: content.channel_url,
         imageUrl: content.icon,
-        imageBlurhash: content.icon
+        imageBlurhash: content.icon,
+        backgroundImage: content.banner || undefined,
+        backgroundBlurhash: content.banner_blurhash || undefined
       },
       attribution: {
         type: 'card-attribution',
