@@ -41,7 +41,6 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
         title: [{type: 'text', text: content.name}],
         url: content.channel_url,
         imageUrl: content.icon,
-        imageBlurhash: content.icon,
         backgroundImage: content.banner || undefined,
         backgroundBlurhash: content.banner_blurhash || undefined
       },
