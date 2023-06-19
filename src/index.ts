@@ -364,7 +364,11 @@ app.get('/list/:kind', async (c) => {
 			txt: false,
 			ir: false,
 		}
-		return c.html(ListPage(kind, result.results.map(result => mapKindToHtml(kind, result, options)), result.next, result.prev, result.last));
+		let results : any[] = []
+		for (let input of result.results) {
+			results.push(await mapKindToHtml(kind, input, options));
+		}
+		return c.html(ListPage(kind, results, result.next, result.prev, result.last));
 	}
 })
 

@@ -32,7 +32,6 @@ export function YoutubeKind(props: {data: YoutubeData}, options: RenderOptions) 
   let date = new Date(content.iso8601);
   const id = props.data.id;
   let archiveUrl = props.data.archive || null;
-
   if (options.ir) {
     const result : CardNode = {
       type: 'card',
