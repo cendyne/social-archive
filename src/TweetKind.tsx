@@ -19,6 +19,7 @@ interface TweetContent {
   videos: {
     poster: string
     url: string
+    webm?: string
     width: number
     height: number
     blurhash: string
@@ -217,6 +218,7 @@ export async function TweetKind(props: {data: TweetData}, options: RenderOptions
               type: 'video',
               alt: 'Video included with tweet',
               mp4: video.url,
+              webm: video.webm,
               poster: video.poster,
               blurhash: video.blurhash,
               width: video.width,
@@ -334,6 +336,7 @@ export async function TweetKind(props: {data: TweetData}, options: RenderOptions
       data-height={video.height}
       controls=""
       preload="none">
+      {video.webm && <source src={video.webm} type="video/webm" />}
       <source src={video.url} type="video/mp4"/>
     </video>
     })}
