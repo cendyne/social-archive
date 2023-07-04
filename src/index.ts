@@ -111,6 +111,7 @@ app.post('/new/:kind/:id', bearerCheck(), async (c) => {
 	try {
 		body = await c.req.json<NewBody>();
 	} catch (e) {
+		console.log("Missing body or invalid json")
 		return c.text('Missing body or invalid json', 400);
 	}
 	if (!body) {
@@ -126,16 +127,19 @@ app.post('/new/:kind/:id', bearerCheck(), async (c) => {
 	try {
 		time = new Date(body.time);
 	} catch (e) {
+		console.log("Could not parse time")
 		return c.text('Could not parse "time" as ISO8601');
 	}
 	if (!body.content) {
+		console.log("Missing content")
 		return c.text('Please supply json with a "content" field', 400);
 	}
 	const content = JSON.stringify(body.content);
-	const {success} = await c.env.DB.prepare('INSERT OR REPLACE INTO archive (kind, kind_id, unixtime, content, archive_url) values (?, ?, ?, ?, ?)')
-	.bind(kind, `${id}`, Math.ceil(time.getTime() / 1000), content, body.archive)
+	const {success, error} = await c.env.DB.prepare('INSERT OR REPLACE INTO archive (kind, kind_id, unixtime, content, archive_url) values (?, ?, ?, ?, ?)')
+	.bind(kind, `${id}`, Math.ceil(time.getTime() / 1000), content, body.archive || null)
 	.run();
 	if (!success) {
+		console.log("Failed to insert", error)
 		return c.text('Failed', 500);
 	}
 	return c.text('OK');
@@ -550,6 +554,14 @@ app.get('/iframe-example', async (c) => {
 
 app.get('/iframe-test', async (c) => {
 	return c.html(IframeFlex());
+})
+
+app.onError((e, c) => {
+	console.error(e);
+	if (e && e.stack) {
+		console.error(e.stack);
+	}
+	return c.text('Internal error', 500);
 })
 
 export default app
