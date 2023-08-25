@@ -118,6 +118,49 @@ export function toText(node : Child, body: string[]) {
   }
 }
 
+export function toSimpleText(node : Child, body: string[]) {
+  let dirtyLine = '';
+  let visit = function(node : Child | null) {
+    if (node == null) {
+      return;
+    }
+    if (typeof node == 'string') {
+      body.push(node.replaceAll("\n", " "));
+    } else if (typeof node == 'number') {
+      visit(`${node}`);
+    } else if (node instanceof JSXNode) {
+      if (node.tag == 'a') {
+        if (node.props['target'] == '_blank') {
+          visit(node.props['href']);
+        } else {
+          for (let child of node.children) {
+            visit(child);
+          }
+        }
+      } else if (node.tag == 'p') {
+        for (let child of node.children) {
+          visit(child);
+        }
+        body.push(' ')
+      } else if (node.tag == 'br') {
+        body.push(' ')
+      } else {
+        for (let child of node.children) {
+          visit(child);
+        }
+      }
+    } else if (Array.isArray(node)) {
+      for (let item of node) {
+        visit(item);
+      }
+    }
+  }
+  visit(node);
+  if (dirtyLine.length > 0) {
+    body.push(' ');
+  }
+}
+
 function visitIRList(nodes: Child[]) : Node[] {
   if (!nodes) {
     return [];

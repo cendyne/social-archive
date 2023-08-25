@@ -2,7 +2,7 @@
 /** @jsxFrag  Fragment */
 import { jsx, JSXNode, Fragment } from 'hono/jsx'
 import { RenderOptions } from './RenderOptions'
-import { resizeUrl, toIR, toText } from './utils'
+import { resizeUrl, toIR, toSimpleText, toText } from './utils'
 import { HtmlEscapedString } from 'hono/utils/html'
 import { HtmlEscaped } from 'hono/utils/html'
 import { CardContent, CardMedia, CardNode, ImageNode, VideoNode } from 'document-ir'
@@ -628,10 +628,14 @@ export async function TootKind(props: {data: TootData}, options: RenderOptions) 
     if (content.media_attachments && content.media_attachments.length > 0) {
       const mediaContent : (ImageNode | VideoNode)[] = [];
       for (let media of content.media_attachments) {
+        let alt = media.description;
+        if (!alt || alt == "" || alt == "alt") {
+          alt = "Media attached to toot, no description available"
+        }
         if (media.type == 'image') {
           mediaContent.push({
             type: 'image',
-            alt: media.description,
+            alt,
             url: media.url,
             blurhash: media.blurhash,
             width: media.meta.original.width,
@@ -640,7 +644,7 @@ export async function TootKind(props: {data: TootData}, options: RenderOptions) 
         } else if (media.type == 'video') {
           mediaContent.push({
             type: 'video',
-            alt: media.description,
+            alt,
             mp4: media.url,
             poster: media.preview_url,
             blurhash: media.blurhash,
@@ -785,4 +789,71 @@ export async function TootKind(props: {data: TootData}, options: RenderOptions) 
       {options.showLinks && <Fragment> - <a href={`/json/get/toot/${props.data.id}`} target='_top'>as json</a> - <a href={`/get/toot/${props.data.id}`} target='_top'>as html</a></Fragment>}
     </div>
   </div>;
+}
+
+export function TootOEmbed(url: URL, props: {data: TootData}) {
+  const toot = props.data;
+  if (!toot) {
+    return <></>
+  }
+  const parsedHtml = parseHtml(toot.content.content);
+  const textList : string[] = [];
+  toSimpleText(parsedHtml, textList);
+  const description = textList.join('').replaceAll(/  +/g, ' ');
+
+  const emojis : EmojiMap = {};
+  for (const emoji of toot.content.emojis) {
+    emojis[emoji.shortcode] = emoji;
+  }
+  for (const emoji of toot.content.account.emojis) {
+    emojis[emoji.shortcode] = emoji;
+  }
+  const displayName = parseEmojis(emojis, toot.content.account.display_name);
+  const displayNameList : string[] = []
+  toSimpleText(displayName, displayNameList);
+  const displayNameText = displayNameList.join('').replaceAll(/  +/g, ' ');
+
+  const date = new Date(toot.content.created_at);
+  let imageUrl : string | undefined;
+  let videoUrl : string | undefined;
+  let videoWidth : number | undefined;
+  let videoHeight : number | undefined;
+
+  if (toot.content.media_attachments && toot.content.media_attachments.length > 0) {
+    const mediaContent : (ImageNode | VideoNode)[] = [];
+    for (let media of toot.content.media_attachments) {
+      let alt = media.description;
+      if (!alt || alt == "" || alt == "alt") {
+        alt = "Media attached to toot, no description available"
+      }
+      if (media.type == 'image') {
+        if (!imageUrl) {
+          imageUrl = media.url;
+        }
+      } else if (media.type == 'video') {
+        if (!videoUrl) {
+          videoUrl = media.url;
+          videoHeight = media.meta.original.height;
+          videoWidth = media.meta.original.width;
+        }
+        if (!imageUrl) {
+          imageUrl = media.preview_url;
+        }
+      }
+    }
+  }
+
+  return <>
+  <meta property="og:type" content="website" />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={url.toString()} />
+  <meta property="og:title" content={`${displayNameText} ${date.toLocaleString()}`} />
+  {imageUrl && <meta property="og:image" content={imageUrl} />}
+  {videoUrl && <>
+    <meta property="og:video" content={videoUrl} />
+    <meta property="og:video:type" content="video/mp4" />
+    <meta property="og:video:width" content={videoWidth} />
+    <meta property="og:video:height" content={videoHeight} />
+  </>}
+  </>;
 }

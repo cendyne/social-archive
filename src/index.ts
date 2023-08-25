@@ -11,8 +11,8 @@ import { ListPage } from './ListPage'
 import { RenderOptions } from './RenderOptions'
 import { getKey } from './signature'
 import { SinglePage } from './SinglePage'
-import { TootKind } from './TootKind'
-import { TweetKind } from './TweetKind'
+import { TootKind, TootOEmbed } from './TootKind'
+import { TweetKind, TweetOEmbed } from './TweetKind'
 import { VimeoKind } from './VimeoKind'
 import { UnknownKind } from './UnknownKind'
 import { decodeBase64Url, encodeBase64Url } from './utils'
@@ -351,6 +351,22 @@ async function mapKindToHtml(kind: string, result: {id: string, content: any, ar
 	}
 }
 
+async function mapKindToOEmbed(url: URL, kind: string, result: {id: string, content: any}) : Promise<any> {
+	if (kind == 'tweet') {
+		return TweetOEmbed(url, {data: {archive: null, ...result}});
+	} else if (kind == 'youtube') {
+		return undefined;
+	} else if (kind == 'toot') {
+		const r = TootOEmbed(url, {data: {archive: null, ...result}});
+		console.log('result', r)
+		return r;
+	} else if (kind == 'vimeo') {
+		return undefined;
+	} else {
+		return undefined;
+	}
+}
+
 app.get('/list/:kind', async (c) => {
 	const kind = c.req.param('kind');
 	if (!kind || kind.length <= 0) {
@@ -405,6 +421,7 @@ app.get('/get/:kind/:id', async (c) => {
 			content: json,
 			archive: result.archive_url || null
 		}, options);
+
 		if (raw !== undefined) {
 			return c.html(html);
 		}
@@ -417,7 +434,8 @@ app.get('/get/:kind/:id', async (c) => {
 		if (ir !== undefined) {
 			return c.json(html);
 		}
-		return c.html(SinglePage(kind, [html]));
+		const oembed = await mapKindToOEmbed(new URL(c.req.url), kind, {id: result.kind_id, content: json});
+		return c.html(SinglePage(kind, [html], oembed));
 	} else {
 		return c.text('Not found', 404);
 	}

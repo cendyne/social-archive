@@ -2,7 +2,7 @@
 /** @jsxFrag  Fragment */
 import { Fragment, jsx, JSXNode } from 'hono/jsx'
 import { RenderOptions } from './RenderOptions'
-import { resizeUrl, toIR, toText } from './utils'
+import { resizeUrl, toIR, toSimpleText, toText } from './utils'
 import { CardContent, CardMedia, CardNode, ImageNode, VideoNode } from 'document-ir'
 interface TweetContent {
   name: string
@@ -347,4 +347,50 @@ export async function TweetKind(props: {data: TweetData}, options: RenderOptions
       {options.showLinks && <Fragment> - <a href={`/json/get/tweet/${props.data.id}`} target='_top'>as json</a> - <a href={`/get/tweet/${props.data.id}`} target='_top'>as html</a></Fragment>}
     </div>
   </div>;
+}
+
+export function TweetOEmbed(url: URL, props: {data: TweetData}) {
+  const tweet = props.data;
+  if (!tweet) {
+    return <></>
+  }
+  const parsedHtml = parseTweet(tweet.content.text);
+  const textList : string[] = [];
+  toSimpleText(parsedHtml, textList);
+  const description = textList.join('').replaceAll(/  +/g, ' ');
+  const displayNameText = tweet.content.name;
+
+  const date = new Date(tweet.content.iso8601);
+  let imageUrl : string | undefined;
+  let videoUrl : string | undefined;
+  let videoWidth : number | undefined;
+  let videoHeight : number | undefined;
+
+  if (tweet.content.photos && tweet.content.photos.length > 0) {
+    for (let media of tweet.content.photos) {
+      imageUrl = media.url;
+    }
+  }
+  if (tweet.content.videos && tweet.content.videos.length > 0) {
+    for (let media of tweet.content.videos) {
+      imageUrl = media.poster;
+      videoUrl = media.url;
+      videoHeight = media.height;
+      videoWidth = media.width;
+    }
+  }
+
+  return <>
+  <meta property="og:type" content="website" />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={url.toString()} />
+  <meta property="og:title" content={`${displayNameText} ${date.toLocaleString()}`} />
+  {imageUrl && <meta property="og:image" content={imageUrl} />}
+  {videoUrl && <>
+    <meta property="og:video" content={videoUrl} />
+    <meta property="og:video:type" content="video/mp4" />
+    <meta property="og:video:width" content={videoWidth} />
+    <meta property="og:video:height" content={videoHeight} />
+  </>}
+  </>;
 }
