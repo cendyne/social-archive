@@ -8,7 +8,7 @@ bucket = "./assets"
 
 [[ d1_databases ]]
 binding = "DB"
-database_name = "social_archive2"
-database_id = "199e8c2f-5e1c-4ea0-983a-c33dd40f2687"
-preview_database_id = "199e8c2f-5e1c-4ea0-983a-c33dd40f2687"
+database_name = "social_archive3"
+database_id = "2459777d-9762-4711-99ae-29d0560edaac"
+preview_database_id = "2459777d-9762-4711-99ae-29d0560edaac"
 #
