@@ -38,7 +38,7 @@ interface TweetData {
 
 type Child = JSXNode | string | number | Child[]
 
-function parseTweet(content: string) : Child {
+function parseTweet(content: string) : Child[] {
   let result : Child[] = [];
   let top = '';
   let mode : 'text' | 'username' | 'hashtag' | 'link' = 'text';
@@ -137,6 +137,37 @@ function parseTweet(content: string) : Child {
   } else if (mode == 'link') {
     result.push(<a href={`http${secure ? 's' : ''}://${top}`} target='_top' rel='ugc noreferrer nofollow noopener'>{top}</a>);
   }
+  for (let i = 0; i < result.length; i++) {
+    let node = result[i];
+    if (typeof node === 'string' && node.includes('\n')) {
+      // rebuild this so all but the last line have a br
+      const lines = node.split('\n');
+      let replacement : Child[] = [];
+      for (let j = 0; j < lines.length; j++) {
+        
+        if (j < lines.length - 1) {
+          replacement.push(<>{lines[j]}{`\n`}<br /></>);
+        } else {
+          replacement.push(lines[j]);
+        }
+      }
+      result[i] = replacement;
+    }
+  }
+  if (result.length > 0) {
+    // check the last if it is br
+    let last = result[result.length - 1];
+    if (last instanceof JSXNode && last.tag == 'br') {
+      result.pop();
+    }
+    if (result.length > 0) {
+      last = result[result.length - 1];
+      // if the last is a string and its last character is \n, remove it
+      if (typeof last === 'string' && last.endsWith('\n')) {
+        result[result.length - 1] = last.trimEnd();
+      }
+    }
+  }
   return result;
 }
 
@@ -190,6 +221,7 @@ export async function TweetKind(props: {data: TweetData}, options: RenderOptions
         url: statusUrl
       }
     };
+    
     const cardContent : CardContent = {
       type: 'card-content',
       content: await toIR(htmlContent)

@@ -4,12 +4,12 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20221111.1",
     "typescript": "^5.0.0",
-    "wrangler": "^3.58.0"
+    "wrangler": "^4.1.0"
   },
   "private": true,
   "scripts": {
     "start": "wrangler dev",
-    "deploy": "wrangler publish"
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
     "document-ir": "github:cendyne/document-ir#0.0.4",

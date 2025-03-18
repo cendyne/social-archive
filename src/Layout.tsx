@@ -2,7 +2,6 @@
 /** @jsxFrag  Fragment */
 import { jsx } from 'hono/jsx'
 export function Layout(props: {title: string, children?: any, testing?: boolean, oembed?: any}) {
-  console.log('oembed', props.oembed)
   return <html>
   <head>
     {props.testing && <link rel="stylesheet" href="/static/testing.css" />}
